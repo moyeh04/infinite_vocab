@@ -3,6 +3,7 @@ serviceAccountKey.json
 
 #Python
 __pycache__
+*.pyc
 
 # Firebase Emulator logs
 firebase-debug.log
