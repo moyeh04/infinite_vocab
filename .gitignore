@@ -9,3 +9,6 @@ __pycache__
 firebase-debug.log
 firebase-debug.*.log
 firestore-debug.log
+
+#Bruno metadata
+api_tests/Infinite_Vocab_Backend/bruno.json
