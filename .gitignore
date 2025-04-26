@@ -1,1 +1,10 @@
+#Secret
 serviceAccountKey.json
+
+#Python
+__pycache__
+
+# Firebase Emulator logs
+firebase-debug.log
+firebase-debug.*.log
+firestore-debug.log
