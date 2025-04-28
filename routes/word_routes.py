@@ -1,4 +1,4 @@
-from firebase_admin import auth
+from firebase_admin import auth, firestore
 from flask import Blueprint, jsonify, request
 
 words_bp = Blueprint("words_api", __name__)
@@ -16,7 +16,7 @@ def create_word():
         return jsonify({"error": "Authorization header missing or invalid format"}), 401
 
     try:
-        id_token = auth_header[7:]
+        id_token = auth_header[7:]  # Or split(' ')[1]
         decoded_token = auth.verify_id_token(id_token)
         uid = decoded_token["uid"]
         print(f"Successfully verfied token for UID: {uid}")
@@ -33,10 +33,33 @@ def create_word():
     word = request_data.get("word")
 
     if not word or not word.strip():
-        return jsonify(
-            {"error": "Missing or empty 'word_text' field in JSON body"}
-        ), 400
+        return jsonify({"error": "Missing or empty 'word' field in JSON body"}), 400
 
+    word = word.strip()
     print(f"Input validation passed. Word to add: {word}")
 
-    return jsonify({"message": "Word routes /add POST endpoint reached"})
+    db = firestore.client()
+
+    data_to_save = {
+        "word": word,
+        "stars": 0,
+        "user_uid": uid,
+        "createdAt": firestore.SERVER_TIMESTAMP,
+        "updatedAt": firestore.SERVER_TIMESTAMP,
+    }
+
+    try:
+        _, words_ref = db.collection("words").add(data_to_save)
+        print(f"Word added to Firestore with ID: {words_ref.id}")
+        response_data = data_to_save.copy()
+        response_data["word_id"] = words_ref.id
+
+        # Remove createdAt/updatedAt fields because they hold SERVER_TIMESTAMP
+        # sentinels which cannot be directly converted to JSON by jsonify.
+        del response_data["createdAt"]
+        del response_data["updatedAt"]
+        return jsonify(response_data), 201
+
+    except Exception as e:
+        print(f"Error saving word to Firestore: {e}")
+        return jsonify({"error": "Error saving word to database"}), 500
