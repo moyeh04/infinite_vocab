@@ -47,8 +47,8 @@ def authenticate_user():
             }
         ), 200
 
-    except ValueError:
-        print("Error: Invalid ID token provided.")
+    except ValueError as e:
+        print(f"ValueError during token Verfication: {e}")
         return jsonify({"error": "Invalid ID token"}), 401
 
     except Exception as e:
