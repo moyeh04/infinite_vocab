@@ -3,11 +3,14 @@ from flask import Blueprint, g, jsonify, request
 
 words_bp = Blueprint("words_api", __name__)
 
+
 @words_bp.before_request
 def authenticate_before_request():
     auth_header = request.headers.get("Authorization")
     if not auth_header or not auth_header.startswith("Bearer "):
-        return jsonify({"error": "Authorization header missing or invalid format"}), 401
+        return jsonify(
+            {"error": "Authorization header missing or invalid format"}
+        ), 401
 
     try:
         id_token = auth_header[7:]  # Or split(' ')[1]
@@ -19,11 +22,52 @@ def authenticate_before_request():
     except Exception as e:
         print(f"Error verifying Firebase ID token: {e}")
 
-        return jsonify({"error": "Invalid or expired authentication token"}), 401
+        return jsonify(
+            {"error": "Invalid or expired authentication token"}
+        ), 401
+
 
 @words_bp.route("/", methods=["GET"])
 def list_words():
-    return jsonify({"message": "Word routes /all GET endpoint reached"})
+    uid = g.user_id
+    print(f"LIST_WORDS: Attempting to fetch words for UID: {uid}")
+
+    try:
+        db = firestore.client()
+        print("LIST_WORDS: Firestore client obtained.")
+
+        words_query = (
+            db.collection("words")
+            .where(filter=firestore.FieldFilter("user_uid", "==", uid))
+            .order_by(field_path="stars", direction="DESCENDING")
+        )
+        print("LIST_WORDS: Query built.")
+
+        word_snapshots = list(words_query.stream())
+        print(f"LIST_WORDS: Found {len(word_snapshots)} word snapshot(s).")
+
+        results_list = []
+        for document_snapshot in word_snapshots:
+            word_data = document_snapshot.to_dict()
+            if word_data is None:
+                print(
+                    f"LIST_WORDS: Warning - Document {document_snapshot.id} has no data (to_dict() returned None). Skipping."
+                )
+                continue
+            word_data["id"] = document_snapshot.id
+            results_list.append(word_data)
+
+        print(
+            f"LIST_WORDS: Prepared results_list with {len(results_list)} items."
+        )
+        # print(f"LIST_WORDS: Full results_list: {results_list}") # Optional: very verbose for many words
+        return jsonify(results_list), 200
+
+    except Exception as e:
+        print(f"LIST_WORDS: Error fetching words for user {uid}: {str(e)}")
+        return jsonify(
+            {"error": "An error occurred while fetching words."}
+        ), 500
 
 
 @words_bp.route("/", methods=["POST"])
@@ -37,7 +81,9 @@ def create_word():
     word = request_data.get("word")
 
     if not word or not word.strip():
-        return jsonify({"error": "Missing or empty 'word' field in JSON body"}), 400
+        return jsonify(
+            {"error": "Missing or empty 'word' field in JSON body"}
+        ), 400
 
     word = word.strip()
     print(f"Input validation passed. Word to add: {word}")
