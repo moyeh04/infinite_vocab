@@ -36,7 +36,9 @@ def authenticate_user():
             # If the service function returned None, it means there was an error getting/creating the code
             print(f"Error: Failed to get or create user code for UID {uid}.")
             # Return a 500 Internal Server Error to indicate a server-side problem
-            return jsonify({"error": "Failed to retrieve or create user data"}), 500
+            return jsonify(
+                {"error": "Failed to retrieve or create user data"}
+            ), 500
 
         return jsonify(
             {
