@@ -1,16 +1,10 @@
 from firebase_admin import auth, firestore
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, g, jsonify, request
 
 words_bp = Blueprint("words_api", __name__)
 
-
-@words_bp.route("/", methods=["GET"])
-def list_words():
-    return jsonify({"message": "Word routes /all GET endpoint reached"})
-
-
-@words_bp.route("/", methods=["POST"])
-def create_word():
+@words_bp.before_request
+def authenticate_before_request():
     auth_header = request.headers.get("Authorization")
     if not auth_header or not auth_header.startswith("Bearer "):
         return jsonify({"error": "Authorization header missing or invalid format"}), 401
@@ -19,12 +13,22 @@ def create_word():
         id_token = auth_header[7:]  # Or split(' ')[1]
         decoded_token = auth.verify_id_token(id_token)
         uid = decoded_token["uid"]
+        g.user_id = uid
         print(f"Successfully verfied token for UID: {uid}")
 
     except Exception as e:
         print(f"Error verifying Firebase ID token: {e}")
 
         return jsonify({"error": "Invalid or expired authentication token"}), 401
+
+@words_bp.route("/", methods=["GET"])
+def list_words():
+    return jsonify({"message": "Word routes /all GET endpoint reached"})
+
+
+@words_bp.route("/", methods=["POST"])
+def create_word():
+    uid = g.user_id
 
     request_data = request.get_json()
     if not request_data:
