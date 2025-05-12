@@ -1,7 +1,7 @@
 from firebase_admin import auth
 from flask import Flask, jsonify, request
 
-import firebase_config  # noqa: F401
+from config import firebase_init  # noqa: F401
 from routes.word_routes import words_bp
 from services.user_service import get_or_create_user_code as usr_code
 
