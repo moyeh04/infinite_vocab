@@ -28,52 +28,66 @@ def authenticate_before_request():
         ), 401
 
 
+@firestore.transactional
+def _atomic_update(transaction, doc_ref_to_update, current_user_uid):
+    # Read
+    snapshot = doc_ref_to_update.get(transaction=transaction)
+
+    if not snapshot.exists:
+        return "NOT_FOUND"
+
+    word_data = snapshot.to_dict()
+
+    if word_data.get("user_uid") != current_user_uid:
+        return "FORBIDDEN"
+
+    word_text = word_data.get("word")
+
+    # Modify
+    current_stars = word_data.get("stars", 0)
+    new_star_count = current_stars + 1
+
+    # Write
+    transaction.update(
+        doc_ref_to_update,
+        {"stars": new_star_count, "updatedAt": firestore.SERVER_TIMESTAMP},
+    )
+    return (new_star_count, word_text)
+
+
 @words_bp.route("/<word_id>/star", methods=["POST"])
 def star_word(word_id):
     uid = g.user_id
     db = firestore.client()
-
-    if not word_id:
-        return jsonify({"error": "Missing or empty 'word' field in url"}), 400
+    transaction = db.transaction()
 
     try:
         word_doc_ref = db.collection("words").document(word_id)
-        word_doc_snapshot = word_doc_ref.get()
-        word_text = word_doc_snapshot.to_dict().get("word")
 
-        if not word_doc_snapshot:
+        result, word_text = _atomic_update(transaction, word_doc_ref, uid)
+
+        if result == "NOT_FOUND":
+            return jsonify({"error": f"Word with ID '{word_id}'"}), 404
+        if result == "FORBIDDEN":
             return jsonify(
-                {"error": f"Word '{word_text}' not found in your list."}
-            ), 404
-
-        word_id_to_update = word_doc_snapshot.id
-        current_stars = word_doc_snapshot.to_dict().get("stars", 0)
-        new_star_count = current_stars + 1
-
-        data_to_update = {
-            "stars": new_star_count,
-            "updatedAt": firestore.SERVER_TIMESTAMP,
-        }
-
-        db.collection("words").document(word_id_to_update).update(
-            data_to_update
-        )
+                {"error": "You are not authorized to star this word"}
+            ), 403
 
         print(
-            f"STAR_WORD: Star updated for word ID '{word_id_to_update}' (text: '{word_text}') for UID: {uid}. New stars: {new_star_count}"
+            f"STAR_WORD: Star updated for word ID '{word_id}' (text: '{word_text}') for UID: {uid}. New stars: {result}"
         )
 
         return jsonify(
             {
                 "message": f"Successfully starred word '{word_text}'.",
-                "word_id": word_id_to_update,
-                "new_star_count": new_star_count,
+                "word_id": word_id,
+                "new_star_count": result,
             }
         ), 200
 
     except Exception as e:
         print(
-            f"STAR_WORD: Error starring word '{word_text}' for UID {uid}: {str(e)}"
+            f"STAR_WORD: Error starring word ID '{word_id}' for UID {uid}: {str(e)}"
         )
         return jsonify(
             {"error": "An error occurred while starring the word"}
