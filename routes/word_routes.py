@@ -121,7 +121,7 @@ def list_words():
                     f"LIST_WORDS: Warning - Document {document_snapshot.id} has no data (to_dict() returned None). Skipping."
                 )
                 continue
-            word_data["id"] = document_snapshot.id
+            word_data["word_id"] = document_snapshot.id
             results_list.append(word_data)
 
         print(
