@@ -1,61 +1,24 @@
-from firebase_admin import auth
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify
 
 from config import firebase_init  # noqa: F401
+from routes.user_routes import user_bp
 from routes.word_routes import words_bp
-from services.user_service import get_or_create_user_code as usr_code
 
 app = Flask(__name__)
-app.register_blueprint(words_bp, url_prefix="/api/v1/words")
+app.register_blueprint(user_bp)
+app.register_blueprint(words_bp)
 
 
 @app.route("/")
-def hello_world():
-    print("Route '/' was called!")
-    return "<p>Hello, Backend World!<h1>test1</h1></p>"
-
-
-@app.route("/authenticate", methods=["POST"])
-def authenticate_user():
-    id_token = request.json.get("idToken")
-    user_name = request.json.get("name")
-
-    if not id_token:
-        return jsonify({"error": "ID token not provided"}), 400
-
-    try:
-        decoded_token = auth.verify_id_token(id_token)
-        uid = decoded_token["uid"]
-        print(f"Successfully authenticated user with UID: {uid}")
-
-        # --- Call the user service to get or create the user's application code ---
-        user_code = usr_code(uid, user_name)
-
-        # --- Check if the user service returned a valid code ---
-        if user_code is None:
-            # If the service function returned None, it means there was an error getting/creating the code
-            print(f"Error: Failed to get or create user code for UID {uid}.")
-            # Return a 500 Internal Server Error to indicate a server-side problem
-            return jsonify(
-                {"error": "Failed to retrieve or create user data"}
-            ), 500
-
-        return jsonify(
-            {
-                "message": "User authenticated successfully",
-                "uid": uid,
-                "name": user_name,
-                "userCode": user_code,
-            }
-        ), 200
-
-    except ValueError as e:
-        print(f"ValueError during token Verfication: {e}")
-        return jsonify({"error": "Invalid ID token"}), 401
-
-    except Exception as e:
-        print(f"Error verifying ID token: {e}")
-        return jsonify({"error": "Failed to authenticate user"}), 500
+def root_info():
+    return jsonify(
+        {
+            "message": "Welcome to the Infinite Vocabulary API!",
+            "version": "v1.0",
+            "status": "healthy",
+            # "documentation": "/api/docs"
+        }
+    ), 200
 
 
 if __name__ == "__main__":
