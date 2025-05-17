@@ -2,6 +2,12 @@ from firebase_admin import firestore
 from flask import Blueprint, g, jsonify, request
 
 from middleware.firebase_auth_check import firebase_token_required
+from services.word_service import create_word_for_user
+from utils.exceptions import (
+    DatabaseError,
+    DuplicateEntryError,
+    WordServiceError,
+)
 
 words_bp = Blueprint("words_api", __name__, url_prefix="/api/v1/words")
 
@@ -139,49 +145,31 @@ def create_word():
     print(f"Input validation passed. Word to add: {word}")
 
     db = firestore.client()
+    try:
+        new_word_details = create_word_for_user(db, uid, word)
 
-    existing_words_query = (
-        db.collection("words")
-        .where(filter=firestore.FieldFilter("user_uid", "==", uid))
-        .where(filter=firestore.FieldFilter("word", "==", word))
-        .limit(1)
-    )
-    existing_words = list(existing_words_query.stream())
+        return jsonify(new_word_details), 201
 
-    if existing_words:
-        existing_doc_id = existing_words[0].id
-        print("--------------------------------------------------")
-        print(
-            f"Duplicate found: Word '{word}' already exists for user '{uid}' (Existing Doc ID: {existing_doc_id})."
-        )
-        print("--------------------------------------------------")
+    except DuplicateEntryError as e:
+        print(f"ROUTE: Duplicate word - {str(e)}")
+        # Use the attributes from the custom exception
         return jsonify(
             {
-                "message": f"Word '{word}' already exists in your list. Try adding a star to the existing entry instead?",
-                "existing_word_id": existing_doc_id,
+                "message": e.message,  # Or str(e)
+                "existing_word_id": e.conflicting_id,
             }
-        ), 409
+        ), e.status_code  # Use status_code from exception (will be 409)
 
-    data_to_save = {
-        "word": word,
-        "stars": 0,
-        "user_uid": uid,
-        "createdAt": firestore.SERVER_TIMESTAMP,
-        "updatedAt": firestore.SERVER_TIMESTAMP,
-    }
-
-    try:
-        _, words_ref = db.collection("words").add(data_to_save)
-        print(f"Word added to Firestore with ID: {words_ref.id}")
-        response_data = data_to_save.copy()
-        response_data["word_id"] = words_ref.id
-
-        # Remove createdAt/updatedAt fields because they hold SERVER_TIMESTAMP
-        # sentinels which cannot be directly converted to JSON by jsonify.
-        del response_data["createdAt"]
-        del response_data["updatedAt"]
-        return jsonify(response_data), 201
+    except WordServiceError as e:
+        print(f"ROUTE: WordServiceError - {str(e)}")
+        return jsonify(
+            {"error": e.message, "context": e.context}
+        ), e.status_code
 
     except Exception as e:
-        print(f"Error saving word to Firestore: {e}")
-        return jsonify({"error": "Error saving word to database"}), 500
+        # This 'uid' might not be available if the error happened before it was set in this scope.
+        # The one in g.user_id should be from the before_request hook.
+        print(
+            f"ROUTE: Unexpected error in create_word for UID {g.user_id if hasattr(g, 'user_id') else 'unknown'}: {str(e)}"
+        )
+        return jsonify({"error": "An unexpected server error occurred."}), 500
