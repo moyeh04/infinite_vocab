@@ -64,11 +64,9 @@ def create_word_for_user(db, uid, word_text_to_add):
 
 
 def star_word_for_user(db, uid, word_id):
-    transaction = db.transaction()
     try:
-        word_doc_ref = db.collection("words").document(word_id)
-
-        atomic_result = wd.atomic_update(transaction, word_doc_ref, uid)
+        transaction = db.transaction()
+        atomic_result = wd.atomic_update(transaction, db, word_id, uid)
 
         if atomic_result == "NOT_FOUND":
             raise NotFoundError(f"Word with ID '{word_id}' not found.")
