@@ -4,6 +4,8 @@ from data_access import word_dal as wd
 from utils.exceptions import (
     DatabaseError,
     DuplicateEntryError,
+    ForbiddenError,
+    NotFoundError,
     WordServiceError,
 )
 
@@ -59,3 +61,46 @@ def create_word_for_user(db, uid, word_text_to_add):
             f"WordService: Unexpected error in create_word_for_user: {str(e)}"
         )
         raise WordServiceError("An unexpected service error occurred.") from e
+
+
+def star_word_for_user(db, uid, word_id):
+    transaction = db.transaction()
+    try:
+        word_doc_ref = db.collection("words").document(word_id)
+
+        atomic_result = wd.atomic_update(transaction, word_doc_ref, uid)
+
+        if atomic_result == "NOT_FOUND":
+            raise NotFoundError(f"Word with ID '{word_id}' not found.")
+        elif atomic_result == "FORBIDDEN":
+            raise ForbiddenError("You are not authorized to modify this word.")
+
+        new_star_count, word_text = atomic_result
+
+        print(
+            f"STAR_WORD: Star updated for word ID '{word_id}' (text: '{word_text}') for UID: {uid}. New stars: {new_star_count}"
+        )
+        return {
+            "message": f"Successfully starred word '{word_text}'.",
+            "word_id": word_id,
+            "new_star_count": new_star_count,
+        }
+
+    except (NotFoundError, ForbiddenError):
+        raise
+
+    except DatabaseError as de:
+        print(
+            f"WordService: DatabaseError starring word ID '{word_id}' (text: '{word_text}'): {str(de)}"
+        )
+        raise WordServiceError(
+            "A database problem occurred while starring the word."
+        ) from de
+
+    except Exception as e:
+        print(
+            f"WordService: Unexpected error starring word ID '{word_id}' (text: '{word_text}'): {str(e)}"
+        )
+        raise WordServiceError(
+            "An unexpected service error occurred while starring the word."
+        ) from e
