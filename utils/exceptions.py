@@ -64,7 +64,5 @@ class ValidationError(ApplicationError):
 class WordServiceError(ApplicationError):
     """Base exception for errors specific to the WordService."""
 
-    def __init__(
-        self, message="A word service operation failed.", context=None
-    ):
+    def __init__(self, message="A word service operation failed.", context=None):
         super().__init__(message, status_code=500, context=context)

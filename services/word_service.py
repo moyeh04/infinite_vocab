@@ -12,9 +12,7 @@ from utils.exceptions import (
 
 def create_word_for_user(db, user_id, word_text_to_add):
     try:
-        existing_words = wd.find_word_by_text_for_user(
-            db, user_id, word_text_to_add
-        )
+        existing_words = wd.find_word_by_text_for_user(db, user_id, word_text_to_add)
         if existing_words:
             existing_doc_id = existing_words[0].id
             print("--------------------------------------------------")
@@ -54,9 +52,7 @@ def create_word_for_user(db, user_id, word_text_to_add):
             "A database problem occurred while creating your word."
         ) from de
     except Exception as e:
-        print(
-            f"WordService: Unexpected error in create_word_for_user: {str(e)}"
-        )
+        print(f"WordService: Unexpected error in create_word_for_user: {str(e)}")
         raise WordServiceError("An unexpected service error occurred.") from e
 
 

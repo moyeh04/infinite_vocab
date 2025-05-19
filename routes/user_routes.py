@@ -17,9 +17,7 @@ def generate_user():
     try:
         request_data = request.get_json()
         if not request_data:
-            return jsonify(
-                {"error": "Missing or invalid JSON request body"}
-            ), 400
+            return jsonify({"error": "Missing or invalid JSON request body"}), 400
 
         user_name = request.json.get("name")
         if not user_name or not user_name.strip():
@@ -35,9 +33,7 @@ def generate_user():
             # If the service function returned None, it means there was an error getting/creating the code
             print(f"Error: Failed to get or create user code for UID {uid}.")
             # Return a 500 Internal Server Error to indicate a server-side problem
-            return jsonify(
-                {"error": "Failed to retrieve or create user data"}
-            ), 500
+            return jsonify({"error": "Failed to retrieve or create user data"}), 500
 
         return jsonify(
             {
