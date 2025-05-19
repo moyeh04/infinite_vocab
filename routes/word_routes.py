@@ -22,53 +22,6 @@ def authenticate_before_request():
     return firebase_token_required()
 
 
-@words_bp.route("/<word_id>/star", methods=["POST"])
-def star_word(word_id):
-    try:
-        success_data = star_word_for_user(g.db, g.user_id, word_id)
-        return jsonify(success_data), 200
-
-    except NotFoundError as e:
-        print(f"ROUTE: Word not found - {str(e)}")
-        return jsonify({"error": str(e)}), e.status_code  # 404
-    except ForbiddenError as e:
-        print(f"ROUTE: Forbidden to star word - {str(e)}")
-        return jsonify({"error": str(e)}), e.status_code  # 403
-    except WordServiceError as e:
-        print(f"ROUTE: WordServiceError - {str(e)}")
-        return jsonify(
-            {"error": e.message, "context": e.context}
-        ), e.status_code  # 500
-    except Exception as e:
-        print(
-            f"ROUTE: Unexpected error in star_word for word_id {word_id}: {str(e)}"
-        )
-        return jsonify({"error": "An unexpected server error occurred."}), 500
-
-
-@words_bp.route("/", methods=["GET"])
-def list_words():
-    print(f"ROUTE: Attempting to fetch words for UID: {g.user_id}")
-    try:
-        word_list_data = list_words_for_user(g.db, g.user_id)
-        return jsonify(word_list_data), 200
-
-    except WordServiceError as e:
-        print(
-            f"ROUTE: WordServiceError fetching words for UID {g.user_id}: {str(e)}"
-        )
-        return jsonify(
-            {"error": e.message, "context": e.context}
-        ), e.status_code  # 500
-    except Exception as e:
-        print(
-            f"ROUTE: Unexpected error fetching words for UID {g.user_id}: {str(e)}"
-        )
-        return jsonify(
-            {"error": "An error occurred while fetching words."}
-        ), 500
-
-
 @words_bp.route("/", methods=["POST"])
 def create_word():
     request_data = request.get_json()
@@ -89,7 +42,6 @@ def create_word():
         new_word_details = create_word_for_user(g.db, g.user_id, word)
 
         return jsonify(new_word_details), 201
-
     except DuplicateEntryError as e:
         print(f"ROUTE: Duplicate word - {str(e)}")
         # Use the attributes from the custom exception
@@ -99,15 +51,58 @@ def create_word():
                 "existing_word_id": e.conflicting_id,
             }
         ), e.status_code  # Use status_code from exception (will be 409)
-
     except WordServiceError as e:
         print(f"ROUTE: WordServiceError - {str(e)}")
         return jsonify(
             {"error": e.message, "context": e.context}
         ), e.status_code
-
     except Exception as e:
         print(
             f"ROUTE: Unexpected error in list_words for UID {g.user_id}: {str(e)}"
+        )
+        return jsonify({"error": "An unexpected server error occurred."}), 500
+
+
+@words_bp.route("/", methods=["GET"])
+def list_words():
+    print(f"ROUTE: Attempting to fetch words for UID: {g.user_id}")
+    try:
+        word_list_data = list_words_for_user(g.db, g.user_id)
+        return jsonify(word_list_data), 200
+    except WordServiceError as e:
+        print(
+            f"ROUTE: WordServiceError fetching words for UID {g.user_id}: {str(e)}"
+        )
+        return jsonify(
+            {"error": e.message, "context": e.context}
+        ), e.status_code  # 500
+    except Exception as e:
+        print(
+            f"ROUTE: Unexpected error fetching words for UID {g.user_id}: {str(e)}"
+        )
+        return jsonify(
+            {"error": "An error occurred while fetching words."}
+        ), 500
+
+
+@words_bp.route("/<word_id>/star", methods=["POST"])
+def star_word(word_id):
+    try:
+        success_data = star_word_for_user(g.db, g.user_id, word_id)
+        return jsonify(success_data), 200
+    except NotFoundError as e:
+        print(f"ROUTE: Word not found - {str(e)}")
+        return jsonify({"error": str(e)}), e.status_code  # 404
+    except ForbiddenError as e:
+        print(f"ROUTE: Forbidden to star word - {str(e)}")
+        return jsonify({"error": str(e)}), e.status_code  # 403
+    except WordServiceError as e:
+        print(f"ROUTE: WordServiceError - {str(e)}")
+        return jsonify(
+            {"error": e.message, "context": e.context}
+        ), e.status_code  # 500
+    except Exception as e:
+        print(
+            f"ROUTE: Unexpected error in star_word for word_id {word_id}: {str(e)}"
         )
         return jsonify({"error": "An unexpected server error occurred."}), 500

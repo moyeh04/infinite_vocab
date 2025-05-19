@@ -5,14 +5,14 @@ from utils.exceptions import DatabaseError
 
 def _execute_word_query(
     db,
-    user_uid: str,
+    user_id: str,
     additional_filters: list = None,  # List of tuples: [("field", "op", "value")]
     order_by_config: tuple = None,  # Tuple: ("field", "direction_constant_or_string")
     limit_count: int = None,
 ):
     try:
         query = db.collection("words").where(
-            filter=firestore.FieldFilter("user_uid", "==", user_uid)
+            filter=firestore.FieldFilter("user_id", "==", user_id)
         )
         if additional_filters:
             # Apply any extra filter conditions passed in the 'additional_filters' list.
@@ -36,31 +36,31 @@ def _execute_word_query(
 
         snapshots = list(query.stream())
         # Optional: More generic print or remove if too noisy for a helper
-        # print(f"DAL (_execute_word_query for user {user_uid}): Found {len(snapshots)} docs.")
+        # print(f"DAL (_execute_word_query for user {user_id}): Found {len(snapshots)} docs.")
         return snapshots
     except Exception as e:
         print(
-            f"DAL_ERROR: Error in _execute_word_query for user {user_uid}: {str(e)}"
+            f"DAL_ERROR: Error in _execute_word_query for user {user_id}: {str(e)}"
         )
         raise DatabaseError(
             f"DAL: Firestore error during word query execution: {str(e)}"
         ) from e
 
 
-def find_word_by_text_for_user(db, user_uid: str, word_text: str):
+def find_word_by_text_for_user(db, user_id: str, word_text: str):
     """Finds a specific word by its text for a given user, expects 0 or 1 result."""
-    print(f"DAL: Finding word by text '{word_text}' for user {user_uid}")
+    print(f"DAL: Finding word by text '{word_text}' for user {user_id}")
     filters = [("word", "==", word_text)]
     return _execute_word_query(
-        db, user_uid, additional_filters=filters, limit_count=1
+        db, user_id, additional_filters=filters, limit_count=1
     )
 
 
-def get_all_words_for_user_sorted_by_stars(db, user_uid: str):
+def get_all_words_for_user_sorted_by_stars(db, user_id: str):
     """Gets all words for a user, sorted by stars descending."""
-    print(f"DAL: Getting all words for user {user_uid}, sorted by stars")
+    print(f"DAL: Getting all words for user {user_id}, sorted by stars")
     order_config = ("stars", "DESCENDING")
-    return _execute_word_query(db, user_uid, order_by_config=order_config)
+    return _execute_word_query(db, user_id, order_by_config=order_config)
 
 
 def add_word_to_db(db, data_to_save: dict):
@@ -68,7 +68,6 @@ def add_word_to_db(db, data_to_save: dict):
         timestamp, doc_ref = db.collection("words").add(data_to_save)
         print(f"DAL: Word added to Firestore with ID: {doc_ref.id}")
         return timestamp, doc_ref
-
     except Exception as e:
         print(f"DAL_ERROR: Failed to add word data to Firestore: {str(e)}")
         raise DatabaseError(
@@ -77,7 +76,7 @@ def add_word_to_db(db, data_to_save: dict):
 
 
 @firestore.transactional
-def atomic_update(transaction, db, word_id, current_user_uid):
+def atomic_update(transaction, db, word_id, current_user_id):
     try:
         # Read
         word_doc_ref = db.collection("words").document(word_id)
@@ -88,7 +87,7 @@ def atomic_update(transaction, db, word_id, current_user_uid):
 
         word_data = snapshot.to_dict()
 
-        if word_data.get("user_uid") != current_user_uid:
+        if word_data.get("user_uid") != current_user_id:
             return "FORBIDDEN"
 
         word_text = word_data.get("word")
@@ -105,7 +104,7 @@ def atomic_update(transaction, db, word_id, current_user_uid):
         return (new_star_count, word_text)
     except Exception as e:
         print(
-            f"DAL_ERROR: Error starring words for user {current_user_uid}, word '{word_text}': {str(e)}"
+            f"DAL_ERROR: Error starring words for user {current_user_id}, word '{word_text}': {str(e)}"
         )
         raise DatabaseError(
             f"DAL: Firestore error while querying words: {str(e)}"
