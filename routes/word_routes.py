@@ -30,15 +30,30 @@ def create_word():
         return jsonify({"error": "Missing or invalid JSON request body"}), 400
 
     word = request_data.get("word")
-
     if not word or not word.strip():
         return jsonify({"error": "Missing or empty 'word' field in JSON body"}), 400
-
     word = word.strip()
-    print(f"Input validation passed. Word to add: {word}")
+
+    initial_description = request_data.get("description")
+    if not initial_description or not initial_description.strip():
+        return jsonify(
+            {"error": "Missing or empty 'description' field in JSON body"}
+        ), 400
+    initial_description = initial_description.strip()
+
+    initial_example = request_data.get("example")
+    if not initial_example or not initial_example.strip():
+        return jsonify({"error": "Missing or empty 'example' field in JSON body"}), 400
+    initial_example = initial_example.strip()
+
+    print(
+        f"Input validation passed. Word to add: {word}, Description: {initial_description}, Example: {initial_example}"
+    )
 
     try:
-        new_word_details = create_word_for_user(g.db, g.user_id, word)
+        new_word_details = create_word_for_user(
+            g.db, g.user_id, word, initial_description, initial_example
+        )
 
         return jsonify(new_word_details), 201
     except DuplicateEntryError as e:
