@@ -12,8 +12,8 @@ from utils.exceptions import (
 
 def create_word_for_user(db, uid, word_text_to_add):
     try:
-        existing_words = wd.query_words(
-            db, uid, word_text=word_text_to_add, limit_count=1
+        existing_words = wd.find_word_by_text_for_user(
+            db, uid, word_text_to_add
         )
         if existing_words:
             existing_doc_id = existing_words[0].id
@@ -65,12 +65,7 @@ def create_word_for_user(db, uid, word_text_to_add):
 
 def list_words_for_user(db, user_id):
     try:
-        word_snapshots = wd.query_words(
-            db,
-            user_id,
-            order_by_field="stars",
-            order_by_direction=firestore.Query.DESCENDING,
-        )
+        word_snapshots = wd.get_all_words_for_user_sorted_by_stars(db, user_id)
         results_list = []
         for document_snapshot in word_snapshots:
             word_data = document_snapshot.to_dict()
