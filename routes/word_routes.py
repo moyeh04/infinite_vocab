@@ -3,6 +3,7 @@ from flask import Blueprint, g, jsonify, request
 from middleware.firebase_auth_check import firebase_token_required
 from services.word_service import (
     create_word_for_user,
+    get_word_details_for_user,
     list_words_for_user,
     star_word_for_user,
 )
@@ -31,9 +32,7 @@ def create_word():
     word = request_data.get("word")
 
     if not word or not word.strip():
-        return jsonify(
-            {"error": "Missing or empty 'word' field in JSON body"}
-        ), 400
+        return jsonify({"error": "Missing or empty 'word' field in JSON body"}), 400
 
     word = word.strip()
     print(f"Input validation passed. Word to add: {word}")
@@ -53,13 +52,9 @@ def create_word():
         ), e.status_code  # Use status_code from exception (will be 409)
     except WordServiceError as e:
         print(f"ROUTE: WordServiceError - {str(e)}")
-        return jsonify(
-            {"error": e.message, "context": e.context}
-        ), e.status_code
+        return jsonify({"error": e.message, "context": e.context}), e.status_code
     except Exception as e:
-        print(
-            f"ROUTE: Unexpected error in list_words for UID {g.user_id}: {str(e)}"
-        )
+        print(f"ROUTE: Unexpected error in list_words for UID {g.user_id}: {str(e)}")
         return jsonify({"error": "An unexpected server error occurred."}), 500
 
 
@@ -70,19 +65,36 @@ def list_words():
         word_list_data = list_words_for_user(g.db, g.user_id)
         return jsonify(word_list_data), 200
     except WordServiceError as e:
+        print(f"ROUTE: WordServiceError fetching words for UID {g.user_id}: {str(e)}")
+        return jsonify({"error": e.message, "context": e.context}), e.status_code  # 500
+    except Exception as e:
+        print(f"ROUTE: Unexpected error fetching words for UID {g.user_id}: {str(e)}")
+        return jsonify({"error": "An error occurred while fetching words."}), 500
+
+
+@words_bp.route("/<word_id>", methods=["GET"])
+def word_stats(word_id: str):
+    print(
+        f"ROUTE: Attempting to fetch word details for word_id: {word_id}, UID: {g.user_id}"
+    )
+    try:
+        word_details = get_word_details_for_user(g.db, g.user_id, word_id)
+
+        return jsonify(word_details), 200
+
+    except NotFoundError as e:
+        print(f"ROUTE: NotFoundError for word_id {word_id}, UID {g.user_id} - {str(e)}")
+        return jsonify({"error": str(e)}), e.status_code  # 404
+    except WordServiceError as e:
         print(
-            f"ROUTE: WordServiceError fetching words for UID {g.user_id}: {str(e)}"
+            f"ROUTE: WordServiceError for word_id {word_id}, UID {g.user_id} - {str(e)}"
         )
-        return jsonify(
-            {"error": e.message, "context": e.context}
-        ), e.status_code  # 500
+        return jsonify({"error": e.message, "context": e.context}), e.status_code  # 500
     except Exception as e:
         print(
-            f"ROUTE: Unexpected error fetching words for UID {g.user_id}: {str(e)}"
+            f"ROUTE: Unexpected error in get_word_details_route for word_id {word_id}, UID {g.user_id}: {str(e)}"
         )
-        return jsonify(
-            {"error": "An error occurred while fetching words."}
-        ), 500
+        return jsonify({"error": "An unexpected server error occurred."}), 500
 
 
 @words_bp.route("/<word_id>/star", methods=["POST"])
@@ -98,11 +110,7 @@ def star_word(word_id):
         return jsonify({"error": str(e)}), e.status_code  # 403
     except WordServiceError as e:
         print(f"ROUTE: WordServiceError - {str(e)}")
-        return jsonify(
-            {"error": e.message, "context": e.context}
-        ), e.status_code  # 500
+        return jsonify({"error": e.message, "context": e.context}), e.status_code  # 500
     except Exception as e:
-        print(
-            f"ROUTE: Unexpected error in star_word for word_id {word_id}: {str(e)}"
-        )
+        print(f"ROUTE: Unexpected error in star_word for word_id {word_id}: {str(e)}")
         return jsonify({"error": "An unexpected server error occurred."}), 500
