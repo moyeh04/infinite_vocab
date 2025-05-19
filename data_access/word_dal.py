@@ -16,41 +16,48 @@ def add_word_to_db(db, data_to_save: dict):
         ) from e
 
 
-def find_words_by_user_and_text(db, user_uid, word_text):
+def query_words(
+    db,
+    user_uid: str,
+    word_text: str = None,
+    order_by_field: str = None,
+    order_by_direction: str = None,  # e.g., firestore.Query.DESCENDING or "DESCENDING"
+    limit_count: int = None,
+):
     try:
-        query = (
-            db.collection("words")
-            .where(filter=firestore.FieldFilter("user_uid", "==", user_uid))
-            .where(filter=firestore.FieldFilter("word", "==", word_text))
-            .limit(1)
+        query = db.collection("words").where(
+            filter=firestore.FieldFilter("user_uid", "==", user_uid)
         )
+        if word_text:  # Mainly for checking for Duplicate words
+            query = query.where(
+                filter=firestore.FieldFilter("word", "==", word_text)
+            )
+        if order_by_field:
+            if order_by_direction:
+                query = query.order_by(
+                    field_path=order_by_field, direction=order_by_direction
+                )
+            else:
+                query = query.order_by(
+                    field_path=order_by_field
+                )  # Defaults to ascending
+        if (
+            limit_count is not None
+            and isinstance(limit_count, int)
+            and limit_count > 0
+        ):
+            query = query.limit(limit_count)
+
         snapshots = list(query.stream())
+        print(
+            f"DAL: query_words for user {user_uid} found {len(snapshots)} docs. "
+            f"(Filters: word_text='{word_text}', Order: '{order_by_field}' {order_by_direction}, Limit: {limit_count})"
+        )
         return snapshots
     except Exception as e:
-        print(
-            f"DAL_ERROR: Error querying words for user {user_uid}, word '{word_text}': {str(e)}"
-        )
+        print(f"DAL_ERROR: Error in query_words for user {user_uid}: {str(e)}")
         raise DatabaseError(
-            f"DAL: Firestore error while querying words: {str(e)}"
-        ) from e
-
-
-def get_user_words_sorted_by_stars_dal(db, user_uid):
-    try:
-        words_query = (
-            db.collection("words")
-            .where(filter=firestore.FieldFilter("user_uid", "==", user_uid))
-            .order_by(field_path="stars", direction="DESCENDING")
-        )
-        print("LIST_WORDS: Query built.")
-
-        word_snapshots = list(words_query.stream())
-        print(f"LIST_WORDS: Found {len(word_snapshots)} word snapshot(s).")
-        return word_snapshots
-    except Exception as e:
-        print(f"DAL_ERROR: Error querying words for user {user_uid}: {str(e)}")
-        raise DatabaseError(
-            f"DAL: Firestore error while querying words for user {user_uid}: {str(e)}"
+            f"DAL: Firestore error during general word query: {str(e)}"
         ) from e
 
 
