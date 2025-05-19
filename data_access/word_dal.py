@@ -35,6 +35,25 @@ def find_words_by_user_and_text(db, user_uid, word_text):
         ) from e
 
 
+def get_user_words_sorted_by_stars_dal(db, user_uid):
+    try:
+        words_query = (
+            db.collection("words")
+            .where(filter=firestore.FieldFilter("user_uid", "==", user_uid))
+            .order_by(field_path="stars", direction="DESCENDING")
+        )
+        print("LIST_WORDS: Query built.")
+
+        word_snapshots = list(words_query.stream())
+        print(f"LIST_WORDS: Found {len(word_snapshots)} word snapshot(s).")
+        return word_snapshots
+    except Exception as e:
+        print(f"DAL_ERROR: Error querying words for user {user_uid}: {str(e)}")
+        raise DatabaseError(
+            f"DAL: Firestore error while querying words for user {user_uid}: {str(e)}"
+        ) from e
+
+
 @firestore.transactional
 def atomic_update(transaction, db, word_id, current_user_uid):
     try:
