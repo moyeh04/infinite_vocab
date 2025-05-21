@@ -1,11 +1,11 @@
 meta {
   name: create_word_success
   type: http
-  seq: 1
+  seq: 2
 }
 
 post {
-  url: http://localhost:5000/api/v1/words/
+  url: http://localhost:5000/api/v1/words/check-existence
   body: json
   auth: inherit
 }
@@ -17,6 +17,8 @@ headers {
 
 body:json {
   {
-    "word": "Test word now"
+    "word": "My first word",
+    "description": "My first word",
+    "example": "First"
   }
 }
