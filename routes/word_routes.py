@@ -2,13 +2,14 @@ from flask import Blueprint, g, jsonify, request
 
 from middleware.firebase_auth_check import firebase_token_required
 from services.word_service import (
+    check_word_exists,
     create_word_for_user,
     get_word_details_for_user,
     list_words_for_user,
     star_word_for_user,
 )
 from utils.exceptions import (
-    # DatabaseError, It will rise as WordServiceError
+    # DatabaseError, # It will rise as WordServiceError
     DuplicateEntryError,
     ForbiddenError,
     NotFoundError,
@@ -21,6 +22,35 @@ words_bp = Blueprint("words_api", __name__, url_prefix="/api/v1/words")
 @words_bp.before_request
 def authenticate_before_request():
     return firebase_token_required()
+
+
+@words_bp.route("/check-existence", methods=["POST"])
+def check_word_existence():
+    request_data = request.get_json()
+    if not request_data:
+        return jsonify({"error": "Missing or invalid JSON request body"}), 400
+
+    word_text = request_data.get("word")
+    if not word_text or not word_text.strip():
+        return jsonify({"error": "Missing or empty 'word' field in JSON body"}), 400
+    word_text = word_text.strip()
+
+    print(f"ROUTE: Checking existence for word '{word_text}' for UID {g.user_id}")
+    try:
+        existence_details = check_word_exists(g.db, g.user_id, word_text)
+        return jsonify(existence_details), 200
+    except WordServiceError as e:
+        print(
+            f"ROUTE: WordServiceError during check_existence for word '{word_text}', UID {g.user_id}: {str(e)}"
+        )
+        return jsonify({"error": e.message, "context": e.context}), e.status_code
+    except Exception as e:
+        print(
+            f"ROUTE: Unexpected error in check_existence for word '{word_text}', UID {g.user_id}: {str(e)}"
+        )
+        return jsonify(
+            {"error": "An unexpected error occurred while checking word existence."}
+        ), 500
 
 
 @words_bp.route("/", methods=["POST"])
@@ -58,7 +88,6 @@ def create_word():
         return jsonify(new_word_details), 201
     except DuplicateEntryError as e:
         print(f"ROUTE: Duplicate word - {str(e)}")
-        # Use the attributes from the custom exception
         return jsonify(
             {
                 "message": e.message,  # Or str(e)
