@@ -39,6 +39,47 @@ def _get_word_existence_details(db, user_id: str, word_text: str) -> dict:
         ) from e
 
 
+def _get_and_verify_word_ownership(
+    db, current_user_id: str, target_word_id: str
+) -> dict:
+    """
+    Internal helper to fetch a word by ID, check existence, and verify ownership.
+    Returns the word's data dictionary if valid and owned.
+    Raises NotFoundError or ForbiddenError if checks fail.
+    Raises WordServiceError for underlying database issues.
+    """
+    try:
+        snapshot = wd.get_word_by_id(db, target_word_id)
+
+        if not snapshot.exists:
+            raise NotFoundError(f"Word with ID '{target_word_id}' not found.")
+        word_data = snapshot.to_dict()
+
+        if word_data.get("user_id") != current_user_id:  # Ownership check
+            raise NotFoundError(
+                f"Word with ID '{target_word_id}' not found or not accessible."
+            )
+
+        word_data["id"] = snapshot.id
+        return word_data
+    except NotFoundError:
+        raise
+    except DatabaseError as de:
+        print(
+            f"WordService (helper): DatabaseError for word_id '{target_word_id}', user '{current_user_id}': {str(de)}"
+        )
+        raise WordServiceError(
+            "Could not retrieve word due to a data access issue."
+        ) from de
+    except Exception as e:
+        print(
+            f"WordService (helper): Unexpected error for word_id '{target_word_id}', user '{current_user_id}': {str(e)}"
+        )
+        raise WordServiceError(
+            "An unexpected service error occurred while verifying word."
+        ) from e
+
+
 def create_word_for_user(
     db,
     user_id: str,
@@ -158,44 +199,14 @@ def list_words_for_user(db, user_id):
         ) from e
 
 
-def get_word_details_for_user(db, current_user_id: str, target_word_id: str):
+def get_word_details_for_user(db, current_user_id: str, target_word_id: str) -> dict:
     """
     Fetches details for a specific word if it exists and belongs to the user.
-    Raises NotFoundError if word doesn't exist or doesn't belong to the user.
-    Raises WordServiceError for other issues.
     """
-    try:
-        snapshot = wd.get_word_by_id(db, target_word_id)
-
-        if not snapshot.exists:
-            raise NotFoundError(f"Word with ID '{target_word_id}' not found.")
-
-        word_data = snapshot.to_dict()
-
-        # Ownership Check: Does the 'user_id' field in the word match the current user?
-        if word_data.get("user_id") != current_user_id:
-            raise NotFoundError(
-                f"Word with ID '{target_word_id}' not found or you do not have permission to view it."
-            )
-
-        word_data["word_id"] = snapshot.id
-        return word_data
-    except NotFoundError:
-        raise
-    except DatabaseError as de:
-        print(
-            f"WordService: DatabaseError fetching details for word ID '{target_word_id}': {str(de)}"
-        )
-        raise WordServiceError(
-            "Could not retrieve word details due to a data access issue."
-        ) from de
-    except Exception as e:
-        print(
-            f"WordService: Unexpected error fetching details for word ID '{target_word_id}': {str(e)}"
-        )
-        raise WordServiceError(
-            "An unexpected service error occurred while fetching word details."
-        ) from e
+    word_data_with_id = _get_and_verify_word_ownership(
+        db, current_user_id, target_word_id
+    )
+    return word_data_with_id
 
 
 def star_word_for_user(db, user_id, word_id):
