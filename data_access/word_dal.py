@@ -77,6 +77,57 @@ def add_word_to_db(db, data_to_save: dict):
         raise DatabaseError(f"DAL: Firestore error while adding word: {str(e)}") from e
 
 
+def append_description_to_word_db(db, word_id: str, description_text: str):
+    """
+    Appends a new description to a word's description array in Firestore
+    and updates the 'updatedAt' timestamp.
+    Returns True on success.
+    Raises DatabaseError on failure.
+    """
+    try:
+        word_ref = db.collection("words").document(word_id)
+        data_to_update = {
+            "descriptions": firestore.ArrayUnion([description_text]),
+            "updatedAt": firestore.SERVER_TIMESTAMP,
+        }
+        word_ref.update(data_to_update)
+
+        print(
+            f"DAL: Appended description to word '{word_id}'. Text: '{description_text}'"
+        )
+        return True
+    except Exception as e:
+        print(f"DAL_ERROR: Failed to append description to word '{word_id}': {str(e)}")
+
+        raise DatabaseError(
+            f"DAL: Could not update descriptions for word '{word_id}' due to Firestore error."
+        ) from e
+
+
+def append_example_to_word_db(db, word_id: str, example_text: str):
+    """
+    Appends a new example to a word's example array in Firestore
+    and updates the 'updatedAt' timestamp.
+    Returns True on success.
+    Raises DatabaseError on failure.
+    """
+    try:
+        word_ref = db.collection("words").document(word_id)
+        data_to_update = {
+            "examples": firestore.ArrayUnion([example_text]),
+            "updatedAt": firestore.SERVER_TIMESTAMP,
+        }
+        word_ref.update(data_to_update)
+
+        print(f"DAL: Appended example to word '{word_id}'. Text: '{example_text}'")
+        return True
+    except Exception as e:
+        print(f"DAL_ERROR: Failed to append example to word '{word_id}': {str(e)}")
+        raise DatabaseError(
+            f"DAL: Could not update examples for word '{word_id}' due to Firestore error."
+        ) from e
+
+
 @firestore.transactional
 def atomic_update(transaction, db, word_id, current_user_id):
     try:

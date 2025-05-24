@@ -151,3 +151,61 @@ def star_word(word_id):
     except Exception as e:
         print(f"ROUTE: Unexpected error in star_word for word_id {word_id}: {str(e)}")
         return jsonify({"error": "An unexpected server error occurred."}), 500
+
+
+@words_bp.route("/<word_id>/descriptions", methods=["POST"])
+def add_description_to_word(word_id: str):
+    try:
+        request_data = request.get_json()
+        description_text = request_data.get("description")
+        if not description_text or not description_text.strip():
+            return jsonify(
+                {"error": "Missing or empty 'description' field in JSON body"}
+            ), 400
+        description_text = description_text.strip()
+        success_data = ws.add_description_for_user(
+            g.db, g.user_id, word_id, description_text
+        )
+        return jsonify(success_data), 200
+    except NotFoundError as e:
+        print(f"ROUTE: Word not found - {str(e)}")
+        return jsonify({"error": str(e)}), e.status_code  # 404
+    except ForbiddenError as e:
+        print(f"ROUTE: Forbidden to add a description to word - {str(e)}")
+        return jsonify({"error": str(e)}), e.status_code  # 403
+    except WordServiceError as e:
+        print(f"ROUTE: WordServiceError - {str(e)}")
+        return jsonify({"error": e.message, "context": e.context}), e.status_code  # 500
+    except Exception as e:
+        print(
+            f"ROUTE: Unexpected error in add_description_for_user for word_id {word_id}: {str(e)}"
+        )
+        return jsonify({"error": "An unexpected server error occurred."}), 500
+
+
+@words_bp.route("/<word_id>/examples", methods=["POST"])
+def add_example_to_word(word_id: str):
+    try:
+        request_data = request.get_json()
+        example_text = request_data.get("example")
+        if not example_text or not example_text.strip():
+            return jsonify(
+                {"error": "Missing or empty 'example' field in JSON body"}
+            ), 400
+        example_text = example_text.strip()
+        success_data = ws.add_example_for_user(g.db, g.user_id, word_id, example_text)
+        return jsonify(success_data), 200
+    except NotFoundError as e:
+        print(f"ROUTE: Word not found - {str(e)}")
+        return jsonify({"error": str(e)}), e.status_code  # 404
+    except ForbiddenError as e:
+        print(f"ROUTE: Forbidden to add a example to word - {str(e)}")
+        return jsonify({"error": str(e)}), e.status_code  # 403
+    except WordServiceError as e:
+        print(f"ROUTE: WordServiceError - {str(e)}")
+        return jsonify({"error": e.message, "context": e.context}), e.status_code  # 500
+    except Exception as e:
+        print(
+            f"ROUTE: Unexpected error in add_example_for_user for word_id {word_id}: {str(e)}"
+        )
+        return jsonify({"error": "An unexpected server error occurred."}), 500

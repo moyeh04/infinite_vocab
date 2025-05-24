@@ -204,6 +204,71 @@ def list_words_for_user(db, user_id):
         ) from e
 
 
+def add_description_for_user(
+    db, current_user_id: str, word_id: str, description_text: str
+):
+    """
+    Adds a description to an existing word, after verifying ownership.
+    """
+    try:
+        # We don't need the word data here, because we are going to add a description, not getting word details.
+        # The function will automatically raise an error if the word doesn't exist or the user doesn't own it.
+        _ = _get_and_verify_word_ownership(db, current_user_id, word_id)
+        # If this check passes then we can add the description.
+        wd.append_description_to_word_db(db, word_id, description_text)
+
+        return {
+            "message": f"Description '{description_text}' added successfully.",
+            "word_id": word_id,
+        }
+    except NotFoundError:
+        raise
+    except DatabaseError as de:
+        print(
+            f"WordService: DatabaseError adding description to word '{word_id}': {str(de)}"
+        )
+        raise WordServiceError(
+            "Could not add description due to a data access issue."
+        ) from de
+    except Exception as e:
+        print(
+            f"WordService: Unexpected error adding description to word '{word_id}': {str(e)}"
+        )
+        raise WordServiceError(
+            "An unexpected service error occurred while adding description."
+        ) from e
+
+
+def add_example_for_user(db, current_user_id: str, word_id: str, example_text: str):
+    """
+    Adds an example to an existing word, after verifying ownership.
+    """
+    try:
+        _ = _get_and_verify_word_ownership(db, current_user_id, word_id)
+        wd.append_example_to_word_db(db, word_id, example_text)
+
+        return {
+            "message": f"Example '{example_text}' added successfully.",
+            "word_id": word_id,
+        }
+    except NotFoundError:
+        raise
+    except DatabaseError as de:
+        print(
+            f"WordService: DatabaseError adding example to word '{word_id}': {str(de)}"
+        )
+        raise WordServiceError(
+            "Could not add example due to a data access issue."
+        ) from de
+    except Exception as e:
+        print(
+            f"WordService: Unexpected error adding example to word '{word_id}': {str(e)}"
+        )
+        raise WordServiceError(
+            "An unexpected service error occurred while adding example."
+        ) from e
+
+
 def get_word_details_for_user(db, current_user_id: str, target_word_id: str) -> dict:
     """
     Fetches details for a specific word if it exists and belongs to the user.
@@ -226,6 +291,18 @@ def star_word_for_user(db, user_id, word_id):
 
         new_star_count, word_text = atomic_result
 
+        prompt_for_description = False
+        prompt_for_example = False
+
+        description_milestones = [5, 10, 15, 20]
+        example_milestones = [10, 20, 30, 40]
+
+        if new_star_count in description_milestones:
+            prompt_for_description = True
+
+        if new_star_count in example_milestones:
+            prompt_for_example = True
+
         print(
             f"STAR_WORD: Star updated for word ID '{word_id}' (text: '{word_text}') for UID: {user_id}. New stars: {new_star_count}"
         )
@@ -233,6 +310,8 @@ def star_word_for_user(db, user_id, word_id):
             "message": f"Successfully starred word '{word_text}'.",
             "word_id": word_id,
             "new_star_count": new_star_count,
+            "prompt_for_description": prompt_for_description,
+            "prompt_for_example": prompt_for_example,
         }
     except (NotFoundError, ForbiddenError):
         raise
