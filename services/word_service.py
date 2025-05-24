@@ -47,6 +47,11 @@ def _get_and_verify_word_ownership(
     Returns the word's data dictionary if valid and owned.
     Raises NotFoundError or ForbiddenError if checks fail.
     Raises WordServiceError for underlying database issues.
+
+    Note: We use this helper in multiple contexts - sometimes we need the returned
+    word data (like in get_word_details_for_user), and sometimes we just need the
+    validation to pass without using the data (like in add_description_for_user).
+    Both use cases are intentional and valid.
     """
     try:
         snapshot = wd.get_word_by_id(db, target_word_id)
