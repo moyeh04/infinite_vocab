@@ -235,6 +235,42 @@ def edit_word_for_user(db, user_id: str, word_id: str, new_word_text: str) -> di
         ) from e
 
 
+def delete_word_for_user(db, user_id: str, word_id: str) -> dict:
+    """
+    Deletes a word for a user after verifying existence and ownership.
+    Returns a success message dictionary.
+    Raises NotFoundError if word not found/owned, or WordServiceError for other issues.
+    """
+    try:
+        word_to_delete_data = _get_and_verify_word_ownership(db, user_id, word_id)
+
+        wd.delete_word_by_id(db, word_id)
+        print(
+            f"WordService: Word ID '{word_id}' (text: '{word_to_delete_data['word']}') deleted for user '{user_id}'."
+        )
+
+        return {
+            "message": f"Word '{word_to_delete_data['word']}' deleted successfully.",
+            "word_id": word_id,
+        }
+    except NotFoundError:
+        raise
+    except DatabaseError as de:
+        print(
+            f"WordService: DatabaseError deleting word '{word_id}' for user '{user_id}': {str(de)}"
+        )
+        raise WordServiceError(
+            "Could not delete word due to a data access issue."
+        ) from de
+    except Exception as e:
+        print(
+            f"WordService: Unexpected error deleting word '{word_id}' for user '{user_id}': {str(e)}"
+        )
+        raise WordServiceError(
+            "An unexpected service error occurred while deleting word."
+        ) from e
+
+
 def list_words_for_user(db, user_id):
     try:
         word_snapshots = wd.get_all_words_for_user_sorted_by_stars(db, user_id)
