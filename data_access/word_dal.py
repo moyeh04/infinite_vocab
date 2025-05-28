@@ -96,7 +96,18 @@ def delete_word_by_id(db, word_id: str):
     Returns True on success. Raises DatabaseError on failure.
     """
     try:
+        example_snapshots = (
+            db.collection("words").document(word_id).collection("examples").stream()
+        )
+        [doc_snapshot.reference.delete() for doc_snapshot in example_snapshots]
+
+        desc_snapshots = (
+            db.collection("words").document(word_id).collection("descriptions").stream()
+        )
+        [doc_snapshot.reference.delete() for doc_snapshot in desc_snapshots]
+
         _ = db.collection("words").document(word_id).delete()
+
         print(f"DAL: Successfully deleted word with ID '{word_id}'")
         return True
     except Exception as e:
@@ -123,54 +134,92 @@ def add_word_to_db(db, data_to_save: dict):
         raise DatabaseError(f"DAL: Firestore error while adding word: {str(e)}") from e
 
 
-def append_description_to_word_db(db, word_id: str, description_text: str):
-    """
-    Appends a new description to a word's description array in Firestore
-    and updates the 'updatedAt' timestamp.
-    Returns True on success.
-    Raises DatabaseError on failure.
-    """
+def append_description_to_word_db(db, word_id: str, description_data: dict):
+    """Adds a new description document to the specified word's 'descriptions' subcollection."""
     try:
-        word_ref = db.collection("words").document(word_id)
-        data_to_update = {
-            "descriptions": firestore.ArrayUnion([description_text]),
-            "updatedAt": firestore.SERVER_TIMESTAMP,
-        }
-        word_ref.update(data_to_update)
-
-        print(
-            f"DAL: Appended description to word '{word_id}'. Text: '{description_text}'"
+        _timestamp, new_description_ref = (
+            db.collection("words")
+            .document(word_id)
+            .collection("descriptions")
+            .add(description_data)
         )
-        return True
+        print(
+            f"DAL: New description added with ID {new_description_ref.id} to word '{word_id}'"
+        )
+        return new_description_ref
     except Exception as e:
         print(f"DAL_ERROR: Failed to append description to word '{word_id}': {str(e)}")
-
         raise DatabaseError(
-            f"DAL: Could not update descriptions for word '{word_id}' due to Firestore error."
+            f"DAL: Could not add description for word '{word_id}' due to Firestore error."
         ) from e
 
 
-def append_example_to_word_db(db, word_id: str, example_text: str):
-    """
-    Appends a new example to a word's example array in Firestore
-    and updates the 'updatedAt' timestamp.
-    Returns True on success.
-    Raises DatabaseError on failure.
-    """
+def append_example_to_word_db(db, word_id: str, example_data: dict):
+    """Adds a new example document to the specified word's 'examples' subcollection."""
     try:
-        word_ref = db.collection("words").document(word_id)
-        data_to_update = {
-            "examples": firestore.ArrayUnion([example_text]),
-            "updatedAt": firestore.SERVER_TIMESTAMP,
-        }
-        word_ref.update(data_to_update)
-
-        print(f"DAL: Appended example to word '{word_id}'. Text: '{example_text}'")
-        return True
+        _timestamp, new_example_ref = (
+            db.collection("words")
+            .document(word_id)
+            .collection("examples")
+            .add(example_data)
+        )
+        print(
+            f"DAL: New example added with ID {new_example_ref.id} to word '{word_id}'"
+        )
+        return new_example_ref
     except Exception as e:
         print(f"DAL_ERROR: Failed to append example to word '{word_id}': {str(e)}")
         raise DatabaseError(
-            f"DAL: Could not update examples for word '{word_id}' due to Firestore error."
+            f"DAL: Could not add example for word '{word_id}' due to Firestore error."
+        ) from e
+
+
+def get_all_descriptions_for_word(db, word_id: str) -> list:
+    """
+    Fetches all description documents for a given word_id from its 'descriptions' subcollection.
+    """
+
+    try:
+        descriptions_list = []
+        # Construct the reference to the subcollection
+        descriptions_ref = (
+            db.collection("words").document(word_id).collection("descriptions")
+        )
+
+        desc_snapshots = descriptions_ref.order_by("createdAt").stream()
+        for desc_snap in desc_snapshots:
+            if desc_snap.exists:
+                description_data = desc_snap.to_dict()
+                description_data["description_id"] = desc_snap.id
+                descriptions_list.append(description_data)
+        return descriptions_list
+    except Exception as e:
+        print(f"DAL_ERROR: Failed to get descriptions for word '{word_id}': {str(e)}")
+        raise DatabaseError(
+            f"DAL: Could not retrieve descriptions for word '{word_id}' due to Firestore error: {str(e)}"
+        ) from e
+
+
+def get_all_examples_for_word(db, word_id: str) -> list:
+    """
+    Fetches all example documents for a given word_id from its 'examples' subcollection.
+    """
+    try:
+        examples_list = []
+        # Construct the reference to the subcollection
+        examples_ref = db.collection("words").document(word_id).collection("examples")
+
+        example_snapshots = examples_ref.order_by("createdAt").stream()
+        for example_snap in example_snapshots:
+            if example_snap.exists:
+                example_data = example_snap.to_dict()
+                example_data["example_id"] = example_snap.id
+                examples_list.append(example_data)
+        return examples_list
+    except Exception as e:
+        print(f"DAL_ERROR: Failed to get examples for word '{word_id}': {str(e)}")
+        raise DatabaseError(
+            f"DAL: Could not retrieve examples for word '{word_id}' due to Firestore error: {str(e)}"
         ) from e
 
 
