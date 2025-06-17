@@ -2,6 +2,7 @@ from firebase_admin import auth
 from flask import Flask, request
 
 import firebase_config  # noqa: F401
+from services.user_service import get_or_create_user_code as usr_code
 
 app = Flask(__name__)
 
@@ -22,12 +23,12 @@ def authenticate_user():
         decoded_token = auth.verify_id_token(id_token)
         uid = decoded_token["uid"]
         print(f"Successfully authenticated user with UID: {uid}")
-        # user_code = usr_code(uid, user_name)  # Will be implemented later
+        user_code = usr_code(uid, user_name)
         return {
             "message": "User authenticated successfully",
             "user_id": uid,
             "name": user_name,
-            # "code": user_code,
+            "code": user_code,
         }, 200
 
     except ValueError:
