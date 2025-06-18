@@ -64,17 +64,6 @@ def _handle_existing_user(user_doc_ref, user_doc, user_name):
         # Code was found, this is the code we will return
         code_to_return = existing_code
         print(f"Found existing user code: {existing_code}")
-
-        # Even if code exists, we might need to update the name, so check needs_update
-        if needs_update:
-            try:
-                user_doc_ref.update(data_to_update)  # Only update name
-                print(f"Updated document for UID {user_doc_ref.id} (name).")
-            except Exception as e:
-                print(f"Error updating name for UID {user_doc_ref.id}: {e}")
-
-                return None
-
     else:
         # Document exists but the code field is missing.
         print(
@@ -84,17 +73,17 @@ def _handle_existing_user(user_doc_ref, user_doc, user_name):
         # Generate a new code
         new_user_code = generate_random_code(8)
         print(f"Generated new user code: {new_user_code}")
-        data_to_update["code"] = new_user_code  # Add the new code to data to update
+        data_to_update["code"] = new_user_code
         code_to_return = new_user_code
 
+    if needs_update:
+        data_to_update["updatedAt"] = firestore.SERVER_TIMESTAMP
         try:
             user_doc_ref.update(data_to_update)
-            print(
-                f"Updated document for UID {user_doc_ref.id} with new code (and potentially new name)."
-            )
+            print(f"Updated document for UID {user_doc_ref.id} with: {data_to_update}")
         except Exception as e:
             print(
-                f"Error updating document for UID {user_doc_ref.id} with new code: {e}"
+                f"Error updating document for UID {user_doc_ref.id} with {data_to_update}: {e}"
             )
             return None
 
@@ -121,6 +110,7 @@ def _handle_new_user(user_doc_ref, user_name):
         "name": user_name,
         "code": new_user_code,
         "createdAt": firestore.SERVER_TIMESTAMP,
+        "updatedAt": firestore.SERVER_TIMESTAMP,
     }
 
     try:
