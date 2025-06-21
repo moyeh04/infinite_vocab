@@ -1,7 +1,6 @@
 import random
 import string
 
-import firebase_admin
 from firebase_admin import firestore
 
 
@@ -11,28 +10,6 @@ def generate_random_code(length=8):
     """
     characters = string.ascii_uppercase + string.digits
     return "".join(random.choice(characters) for i in range(length))
-
-
-def _get_firestore_client():
-    """
-    Gets the Firestore client for the default *already initialized* Firebase app.
-    Returns the Firestore client or None on failure.
-
-    """
-    try:
-        default_app = firebase_admin.get_app()
-        print("Default Firebase app already initialized.")
-        db = firestore.client(app=default_app)
-        print("Firestore client obtained successfully.")
-        return db
-
-    except ValueError:
-        print("Error: Default Firebase app was not initialized.")
-        return None
-
-    except Exception as e:
-        print(f"Error getting Firestore client: {e}")
-        return None
 
 
 def _handle_existing_user(user_doc_ref, user_doc, user_name):
@@ -132,10 +109,7 @@ def get_or_create_user_code(uid, user_name):
     Optionally updates the user's name if different from stored name.
     Returns the user code (string) or None on failure.
     """
-    db = _get_firestore_client()
-    if db is None:
-        print("Failed to obtain Firestore client. Cannot get or create user code.")
-        return None
+    db = firestore.client()
 
     user_doc_ref = db.collection("users").document(uid)
 
