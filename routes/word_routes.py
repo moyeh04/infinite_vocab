@@ -42,17 +42,19 @@ def create_word():
 
     existing_words_query = (
         db.collection("words")
-        .where("user_uid", "==", uid)
-        .where("word", "==", word)
+        .where(filter=firestore.FieldFilter("user_uid", "==", uid))
+        .where(filter=firestore.FieldFilter("word", "==", word))
         .limit(1)
     )
     existing_words = list(existing_words_query.stream())
 
     if existing_words:
         existing_doc_id = existing_words[0].id
+        print("--------------------------------------------------")
         print(
             f"Duplicate found: Word '{word}' already exists for user '{uid}' (Existing Doc ID: {existing_doc_id})."
         )
+        print("--------------------------------------------------")
         return jsonify(
             {
                 "message": f"Word '{word}' already exists in your list. Try adding a star to the existing entry instead?",
