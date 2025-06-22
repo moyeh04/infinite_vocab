@@ -18,10 +18,14 @@ def initialize_firebase_app():
         if "INFINITE_SECURITY" in os.environ:
             cred_path = os.environ.get("INFINITE_SECURITY")
             print("--------------------------------------------------")
-            print(f"CREDENTIAL DETECTED: Attempting initialization using: {cred_path}")
+            print(
+                f"CREDENTIAL DETECTED: Attempting initialization using: {cred_path}"
+            )
 
             if not os.path.exists(cred_path):
-                print(f"ERROR: Service account key file not found at {cred_path}")
+                print(
+                    f"ERROR: Service account key file not found at {cred_path}"
+                )
                 print("Firebase Admin SDK NOT initialized.")
                 print("--------------------------------------------------")
                 sys.exit("Exiting: Missing required service account key.")
@@ -29,10 +33,16 @@ def initialize_firebase_app():
             try:
                 cred = credentials.Certificate(cred_path)
                 firebase_admin.initialize_app(cred)
-                print("Firebase Admin SDK initialized successfully using credentials!")
+                print(
+                    "Firebase Admin SDK initialized successfully using credentials!"
+                )
 
-                auth_emulator_host = os.environ.get("FIREBASE_AUTH_EMULATOR_HOST")
-                firestore_emulator_host = os.environ.get("FIRESTORE_EMULATOR_HOST")
+                auth_emulator_host = os.environ.get(
+                    "FIREBASE_AUTH_EMULATOR_HOST"
+                )
+                firestore_emulator_host = os.environ.get(
+                    "FIRESTORE_EMULATOR_HOST"
+                )
                 using_emulators = auth_emulator_host or firestore_emulator_host
 
                 if using_emulators:
@@ -62,7 +72,9 @@ def initialize_firebase_app():
                     print(
                         f"ERROR during Firebase Admin SDK initialization (ValueError): {e}"
                     )
-                    sys.exit(f"Exiting: Firebase initialization ValueError: {e}")
+                    sys.exit(
+                        f"Exiting: Firebase initialization ValueError: {e}"
+                    )
             except Exception as e:
                 print(f"ERROR during Firebase Admin SDK initialization: {e}")
                 sys.exit(f"Exiting: Firebase initialization error: {e}")

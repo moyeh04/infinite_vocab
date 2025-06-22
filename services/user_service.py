@@ -57,7 +57,9 @@ def _handle_existing_user(user_doc_ref, user_doc, user_name):
         data_to_update["updatedAt"] = firestore.SERVER_TIMESTAMP
         try:
             user_doc_ref.update(data_to_update)
-            print(f"Updated document for UID {user_doc_ref.id} with: {data_to_update}")
+            print(
+                f"Updated document for UID {user_doc_ref.id} with: {data_to_update}"
+            )
         except Exception as e:
             print(
                 f"Error updating document for UID {user_doc_ref.id} with {data_to_update}: {e}"
