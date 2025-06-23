@@ -17,6 +17,7 @@ def authenticate_before_request():
         decoded_token = auth.verify_id_token(id_token)
         uid = decoded_token["uid"]
         g.user_id = uid
+        g.db = firestore.client()
         print(f"Successfully verfied token for UID: {uid}")
 
     except Exception as e:
@@ -25,6 +26,43 @@ def authenticate_before_request():
         return jsonify(
             {"error": "Invalid or expired authentication token"}
         ), 401
+
+
+@words_bp.route("/", methods=["PUT"])
+def star_word():
+    uid = g.user_id
+    db = firestore.client()
+    request_data = request.get_json()
+    if not request_data:
+        return jsonify({"error": "Missing or invalid JSON request body"}), 400
+
+    try:
+        word = request_data.get("word")
+        word_query = (
+            db.collection("words")
+            .where(filter=firestore.FieldFilter("user_uid", "==", uid))
+            .where(filter=firestore.FieldFilter("word", "==", word))
+            .limit(1)
+        )
+        print(word_query)
+        updatequery = list(word_query.stream())
+        print(updatequery)
+        if not updatequery:
+            return jsonify({"error": "No word foudn"}), 200
+        nouble_of_stars = updatequery[0].to_dict()["stars"]
+        print(nouble_of_stars)
+        nouble_of_stars += 1
+        data_to_update = {"stars": nouble_of_stars}
+        print(nouble_of_stars)
+        _ = (
+            db.collection("words")
+            .document(updatequery[0].id)
+            .update(data_to_update)
+        )
+        print(f"STAR_WORD: Attempting to star word {db} for UID: {uid}")
+        return jsonify({"good": "good"})
+    except Exception as e:
+        return jsonify({"error": f"error {e}"})
 
 
 @words_bp.route("/", methods=["GET"])
