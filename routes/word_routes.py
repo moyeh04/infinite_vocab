@@ -28,41 +28,56 @@ def authenticate_before_request():
         ), 401
 
 
-@words_bp.route("/", methods=["PUT"])
-def star_word():
+@words_bp.route("/<word_id>/star", methods=["POST"])
+def star_word(word_id):
     uid = g.user_id
     db = firestore.client()
-    request_data = request.get_json()
-    if not request_data:
-        return jsonify({"error": "Missing or invalid JSON request body"}), 400
+
+    if not word_id:
+        return jsonify({"error": "Missing or empty 'word' field in url"}), 400
 
     try:
-        word = request_data.get("word")
-        word_query = (
-            db.collection("words")
-            .where(filter=firestore.FieldFilter("user_uid", "==", uid))
-            .where(filter=firestore.FieldFilter("word", "==", word))
-            .limit(1)
+        word_doc_ref = db.collection("words").document(word_id)
+        word_doc_snapshot = word_doc_ref.get()
+        word_text = word_doc_snapshot.to_dict().get("word")
+
+        if not word_doc_snapshot:
+            return jsonify(
+                {"error": f"Word '{word_text}' not found in your list."}
+            ), 404
+
+        word_id_to_update = word_doc_snapshot.id
+        current_stars = word_doc_snapshot.to_dict().get("stars", 0)
+        new_star_count = current_stars + 1
+
+        data_to_update = {
+            "stars": new_star_count,
+            "updatedAt": firestore.SERVER_TIMESTAMP,
+        }
+
+        db.collection("words").document(word_id_to_update).update(
+            data_to_update
         )
-        print(word_query)
-        updatequery = list(word_query.stream())
-        print(updatequery)
-        if not updatequery:
-            return jsonify({"error": "No word foudn"}), 200
-        nouble_of_stars = updatequery[0].to_dict()["stars"]
-        print(nouble_of_stars)
-        nouble_of_stars += 1
-        data_to_update = {"stars": nouble_of_stars}
-        print(nouble_of_stars)
-        _ = (
-            db.collection("words")
-            .document(updatequery[0].id)
-            .update(data_to_update)
+
+        print(
+            f"STAR_WORD: Star updated for word ID '{word_id_to_update}' (text: '{word_text}') for UID: {uid}. New stars: {new_star_count}"
         )
-        print(f"STAR_WORD: Attempting to star word {db} for UID: {uid}")
-        return jsonify({"good": "good"})
+
+        return jsonify(
+            {
+                "message": f"Successfully starred word '{word_text}'.",
+                "word_id": word_id_to_update,
+                "new_star_count": new_star_count,
+            }
+        ), 200
+
     except Exception as e:
-        return jsonify({"error": f"error {e}"})
+        print(
+            f"STAR_WORD: Error starring word '{word_text}' for UID {uid}: {str(e)}"
+        )
+        return jsonify(
+            {"error": "An error occurred while starring the word"}
+        ), 500
 
 
 @words_bp.route("/", methods=["GET"])
