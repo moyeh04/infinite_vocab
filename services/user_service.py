@@ -1,15 +1,6 @@
-import random
-import string
-
 from firebase_admin import firestore
 
-
-def generate_random_code(length=8):
-    """
-    Helper function that generates a random code of 8 characters + numbers.
-    """
-    characters = string.ascii_uppercase + string.digits
-    return "".join(random.choice(characters) for i in range(length))
+from utils.helpers import generate_random_code
 
 
 def _handle_existing_user(user_doc_ref, user_doc, user_name):
