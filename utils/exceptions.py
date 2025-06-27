@@ -59,3 +59,12 @@ class ValidationError(ApplicationError):
     ):
         super().__init__(message, status_code=400, context=context)
         self.field_errors = field_errors if field_errors is not None else {}
+
+
+class WordServiceError(ApplicationError):
+    """Base exception for errors specific to the WordService."""
+
+    def __init__(
+        self, message="A word service operation failed.", context=None
+    ):
+        super().__init__(message, status_code=500, context=context)
