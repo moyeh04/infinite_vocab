@@ -36,10 +36,11 @@ def find_words_by_user_and_text(db, user_uid, word_text):
 
 
 @firestore.transactional
-def atomic_update(transaction, doc_ref_to_update, current_user_uid):
+def atomic_update(transaction, db, word_id, current_user_uid):
     try:
         # Read
-        snapshot = doc_ref_to_update.get(transaction=transaction)
+        word_doc_ref = db.collection("words").document(word_id)
+        snapshot = word_doc_ref.get(transaction=transaction)
 
         if not snapshot.exists:
             return "NOT_FOUND"
@@ -57,7 +58,7 @@ def atomic_update(transaction, doc_ref_to_update, current_user_uid):
 
         # Write
         transaction.update(
-            doc_ref_to_update,
+            word_doc_ref,
             {"stars": new_star_count, "updatedAt": firestore.SERVER_TIMESTAMP},
         )
         return (new_star_count, word_text)
