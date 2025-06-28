@@ -33,3 +33,38 @@ def find_words_by_user_and_text(db, user_uid, word_text):
         raise DatabaseError(
             f"DAL: Firestore error while querying words: {str(e)}"
         ) from e
+
+
+@firestore.transactional
+def atomic_update(transaction, doc_ref_to_update, current_user_uid):
+    try:
+        # Read
+        snapshot = doc_ref_to_update.get(transaction=transaction)
+
+        if not snapshot.exists:
+            return "NOT_FOUND"
+
+        word_data = snapshot.to_dict()
+
+        if word_data.get("user_uid") != current_user_uid:
+            return "FORBIDDEN"
+
+        word_text = word_data.get("word")
+
+        # Modify
+        current_stars = word_data.get("stars", 0)
+        new_star_count = current_stars + 1
+
+        # Write
+        transaction.update(
+            doc_ref_to_update,
+            {"stars": new_star_count, "updatedAt": firestore.SERVER_TIMESTAMP},
+        )
+        return (new_star_count, word_text)
+    except Exception as e:
+        print(
+            f"DAL_ERROR: Error starring words for user {current_user_uid}, word '{word_text}': {str(e)}"
+        )
+        raise DatabaseError(
+            f"DAL: Firestore error while querying words: {str(e)}"
+        ) from e
