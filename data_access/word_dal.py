@@ -56,6 +56,22 @@ def find_word_by_text_for_user(db, user_id: str, word_text: str):
     )
 
 
+def get_word_by_id(db, word_id):
+    """Fetches a single word document from Firestore by its ID."""
+    # We skip ownership checks here since this isn't a transaction.
+    # It's more of a service layer's job.
+    try:
+        print(f"DAL: Attempting to fetch word by ID: '{word_id}'")
+        doc_ref = db.collection("words").document(word_id)
+        snapshot = doc_ref.get()
+        return snapshot
+    except Exception as e:
+        print(f"DAL_ERROR: Error fetching word by ID '{word_id}': {str(e)}")
+        raise DatabaseError(
+            f"DAL: Firestore error fetching word by ID '{word_id}': {str(e)}"
+        ) from e
+
+
 def get_all_words_for_user_sorted_by_stars(db, user_id: str):
     """Gets all words for a user, sorted by stars descending."""
     print(f"DAL: Getting all words for user {user_id}, sorted by stars")
@@ -82,12 +98,13 @@ def atomic_update(transaction, db, word_id, current_user_id):
         word_doc_ref = db.collection("words").document(word_id)
         snapshot = word_doc_ref.get(transaction=transaction)
 
+        # We add checks here since this *is* part of a transaction.
         if not snapshot.exists:
             return "NOT_FOUND"
 
         word_data = snapshot.to_dict()
 
-        if word_data.get("user_uid") != current_user_id:
+        if word_data.get("user_id") != current_user_id:
             return "FORBIDDEN"
 
         word_text = word_data.get("word")

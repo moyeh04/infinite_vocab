@@ -90,6 +90,46 @@ def list_words_for_user(db, user_id):
         ) from e
 
 
+def get_word_details_for_user(db, current_user_uid: str, target_word_id: str):
+    """
+    Fetches details for a specific word if it exists and belongs to the user.
+    Raises NotFoundError if word doesn't exist or doesn't belong to the user.
+    Raises WordServiceError for other issues.
+    """
+    try:
+        snapshot = wd.get_word_by_id(db, target_word_id)
+
+        if not snapshot.exists:
+            raise NotFoundError(f"Word with ID '{target_word_id}' not found.")
+
+        word_data = snapshot.to_dict()
+
+        # Ownership Check: Does the 'user_id' field in the word match the current user?
+        if word_data.get("user_id") != current_user_uid:
+            raise NotFoundError(
+                f"Word with ID '{target_word_id}' not found or you do not have permission to view it."
+            )
+
+        word_data["word_id"] = snapshot.id
+        return word_data
+    except NotFoundError:
+        raise
+    except DatabaseError as de:
+        print(
+            f"WordService: DatabaseError fetching details for word ID '{target_word_id}': {str(de)}"
+        )
+        raise WordServiceError(
+            "Could not retrieve word details due to a data access issue."
+        ) from de
+    except Exception as e:
+        print(
+            f"WordService: Unexpected error fetching details for word ID '{target_word_id}': {str(e)}"
+        )
+        raise WordServiceError(
+            "An unexpected service error occurred while fetching word details."
+        ) from e
+
+
 def star_word_for_user(db, user_id, word_id):
     try:
         transaction = db.transaction()
