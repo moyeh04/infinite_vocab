@@ -10,16 +10,16 @@ from utils.exceptions import (
 )
 
 
-def create_word_for_user(db, uid, word_text_to_add):
+def create_word_for_user(db, user_id, word_text_to_add):
     try:
         existing_words = wd.find_word_by_text_for_user(
-            db, uid, word_text_to_add
+            db, user_id, word_text_to_add
         )
         if existing_words:
             existing_doc_id = existing_words[0].id
             print("--------------------------------------------------")
             print(
-                f"Duplicate found: Word '{word_text_to_add}' already exists for user '{uid}' (Existing Doc ID: {existing_doc_id})."
+                f"Duplicate found: Word '{word_text_to_add}' already exists for user '{user_id}' (Existing Doc ID: {existing_doc_id})."
             )
             print("--------------------------------------------------")
             raise DuplicateEntryError(
@@ -30,7 +30,7 @@ def create_word_for_user(db, uid, word_text_to_add):
         data_to_save = {
             "word": word_text_to_add,
             "stars": 0,
-            "user_uid": uid,
+            "user_id": user_id,
             "createdAt": firestore.SERVER_TIMESTAMP,
             "updatedAt": firestore.SERVER_TIMESTAMP,
         }
@@ -46,16 +46,13 @@ def create_word_for_user(db, uid, word_text_to_add):
         del response_data["updatedAt"]
 
         return response_data
-
     except DuplicateEntryError:
         raise
-
     except DatabaseError as de:
         print(f"WordService: DatabaseError encountered: {str(de)}")
         raise WordServiceError(
             "A database problem occurred while creating your word."
         ) from de
-
     except Exception as e:
         print(
             f"WordService: Unexpected error in create_word_for_user: {str(e)}"
@@ -93,10 +90,10 @@ def list_words_for_user(db, user_id):
         ) from e
 
 
-def star_word_for_user(db, uid, word_id):
+def star_word_for_user(db, user_id, word_id):
     try:
         transaction = db.transaction()
-        atomic_result = wd.atomic_update(transaction, db, word_id, uid)
+        atomic_result = wd.atomic_update(transaction, db, word_id, user_id)
 
         if atomic_result == "NOT_FOUND":
             raise NotFoundError(f"Word with ID '{word_id}' not found.")
@@ -106,17 +103,15 @@ def star_word_for_user(db, uid, word_id):
         new_star_count, word_text = atomic_result
 
         print(
-            f"STAR_WORD: Star updated for word ID '{word_id}' (text: '{word_text}') for UID: {uid}. New stars: {new_star_count}"
+            f"STAR_WORD: Star updated for word ID '{word_id}' (text: '{word_text}') for UID: {user_id}. New stars: {new_star_count}"
         )
         return {
             "message": f"Successfully starred word '{word_text}'.",
             "word_id": word_id,
             "new_star_count": new_star_count,
         }
-
     except (NotFoundError, ForbiddenError):
         raise
-
     except DatabaseError as de:
         print(
             f"WordService: DatabaseError starring word ID '{word_id}' (text: '{word_text}'): {str(de)}"
@@ -124,7 +119,6 @@ def star_word_for_user(db, uid, word_id):
         raise WordServiceError(
             "A database problem occurred while starring the word."
         ) from de
-
     except Exception as e:
         print(
             f"WordService: Unexpected error starring word ID '{word_id}' (text: '{word_text}'): {str(e)}"
