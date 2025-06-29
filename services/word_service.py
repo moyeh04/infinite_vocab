@@ -12,8 +12,8 @@ from utils.exceptions import (
 
 def create_word_for_user(db, uid, word_text_to_add):
     try:
-        existing_words = wd.find_words_by_user_and_text(
-            db, uid, word_text_to_add
+        existing_words = wd.query_words(
+            db, uid, word_text=word_text_to_add, limit_count=1
         )
         if existing_words:
             existing_doc_id = existing_words[0].id
@@ -23,7 +23,7 @@ def create_word_for_user(db, uid, word_text_to_add):
             )
             print("--------------------------------------------------")
             raise DuplicateEntryError(
-                f"Word '{word_text_to_add}' already exists in your list.",
+                f"Word '{word_text_to_add}' already exists in your list. Try adding a star to the existing entry instead?",
                 conflicting_id=existing_doc_id,
             )
 
@@ -65,7 +65,12 @@ def create_word_for_user(db, uid, word_text_to_add):
 
 def list_words_for_user(db, user_id):
     try:
-        word_snapshots = wd.get_user_words_sorted_by_stars_dal(db, user_id)
+        word_snapshots = wd.query_words(
+            db,
+            user_id,
+            order_by_field="stars",
+            order_by_direction=firestore.Query.DESCENDING,
+        )
         results_list = []
         for document_snapshot in word_snapshots:
             word_data = document_snapshot.to_dict()
