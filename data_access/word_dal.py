@@ -19,19 +19,11 @@ def _execute_word_query(
             # Currently it is only one filter,
             # which is the word == word_text filter
             for field, op, value in additional_filters:
-                query = query.where(
-                    filter=firestore.FieldFilter(field, op, value)
-                )
+                query = query.where(filter=firestore.FieldFilter(field, op, value))
         if order_by_config:
             sort_field, sort_direction = order_by_config
-            query = query.order_by(
-                field_path=sort_field, direction=sort_direction
-            )
-        if (
-            limit_count is not None
-            and isinstance(limit_count, int)
-            and limit_count > 0
-        ):
+            query = query.order_by(field_path=sort_field, direction=sort_direction)
+        if limit_count is not None and isinstance(limit_count, int) and limit_count > 0:
             query = query.limit(limit_count)
 
         snapshots = list(query.stream())
@@ -39,9 +31,7 @@ def _execute_word_query(
         # print(f"DAL (_execute_word_query for user {user_id}): Found {len(snapshots)} docs.")
         return snapshots
     except Exception as e:
-        print(
-            f"DAL_ERROR: Error in _execute_word_query for user {user_id}: {str(e)}"
-        )
+        print(f"DAL_ERROR: Error in _execute_word_query for user {user_id}: {str(e)}")
         raise DatabaseError(
             f"DAL: Firestore error during word query execution: {str(e)}"
         ) from e
@@ -51,9 +41,7 @@ def find_word_by_text_for_user(db, user_id: str, word_text: str):
     """Finds a specific word by its text for a given user, expects 0 or 1 result."""
     print(f"DAL: Finding word by text '{word_text}' for user {user_id}")
     filters = [("word", "==", word_text)]
-    return _execute_word_query(
-        db, user_id, additional_filters=filters, limit_count=1
-    )
+    return _execute_word_query(db, user_id, additional_filters=filters, limit_count=1)
 
 
 def get_word_by_id(db, word_id):
@@ -86,9 +74,7 @@ def add_word_to_db(db, data_to_save: dict):
         return timestamp, doc_ref
     except Exception as e:
         print(f"DAL_ERROR: Failed to add word data to Firestore: {str(e)}")
-        raise DatabaseError(
-            f"DAL: Firestore error while adding word: {str(e)}"
-        ) from e
+        raise DatabaseError(f"DAL: Firestore error while adding word: {str(e)}") from e
 
 
 @firestore.transactional
