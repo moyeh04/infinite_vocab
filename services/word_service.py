@@ -53,7 +53,7 @@ def create_word_for_user(db, uid, word_text_to_add):
     except DatabaseError as de:
         print(f"WordService: DatabaseError encountered: {str(de)}")
         raise WordServiceError(
-            "A problem occurred with data storage while creating your word."
+            "A database problem occurred while creating your word."
         ) from de
 
     except Exception as e:
@@ -61,6 +61,36 @@ def create_word_for_user(db, uid, word_text_to_add):
             f"WordService: Unexpected error in create_word_for_user: {str(e)}"
         )
         raise WordServiceError("An unexpected service error occurred.") from e
+
+
+def list_words_for_user(db, user_id):
+    try:
+        word_snapshots = wd.get_user_words_sorted_by_stars_dal(db, user_id)
+        results_list = []
+        for document_snapshot in word_snapshots:
+            word_data = document_snapshot.to_dict()
+            word_data["word_id"] = document_snapshot.id
+            results_list.append(word_data)
+
+        print(
+            f"WordService: Prepared results_list with {len(results_list)} items for user {user_id}."
+        )
+        # print(f"WordService: Full results_list: {results_list} for user {user_id}.") # Optional: very verbose for many words
+        return results_list
+    except DatabaseError as de:
+        print(
+            f"WordService: DatabaseError encountered while listing words for user {user_id}: {str(de)}"
+        )
+        raise WordServiceError(
+            "A database problem occurred while fetching your words."
+        ) from de
+    except Exception as e:
+        print(
+            f"WordService: Unexpected error in list_words_for_user for user {user_id}: {str(e)}"
+        )
+        raise WordServiceError(
+            "An unexpected service error occurred while fetching your words."
+        ) from e
 
 
 def star_word_for_user(db, uid, word_id):

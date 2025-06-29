@@ -1,8 +1,11 @@
-from firebase_admin import firestore
 from flask import Blueprint, g, jsonify, request
 
 from middleware.firebase_auth_check import firebase_token_required
-from services.word_service import create_word_for_user, star_word_for_user
+from services.word_service import (
+    create_word_for_user,
+    list_words_for_user,
+    star_word_for_user,
+)
 from utils.exceptions import (
     # DatabaseError, It will rise as WordServiceError
     DuplicateEntryError,
@@ -45,41 +48,21 @@ def star_word(word_id):
 
 @words_bp.route("/", methods=["GET"])
 def list_words():
-    print(f"LIST_WORDS: Attempting to fetch words for UID: {g.user_id}")
-
+    print(f"ROUTE: Attempting to fetch words for UID: {g.user_id}")
     try:
-        print("LIST_WORDS: Firestore client obtained.")
+        word_list_data = list_words_for_user(g.db, g.user_id)
+        return jsonify(word_list_data), 200
 
-        words_query = (
-            g.db.collection("words")
-            .where(filter=firestore.FieldFilter("user_uid", "==", g.user_id))
-            .order_by(field_path="stars", direction="DESCENDING")
-        )
-        print("LIST_WORDS: Query built.")
-
-        word_snapshots = list(words_query.stream())
-        print(f"LIST_WORDS: Found {len(word_snapshots)} word snapshot(s).")
-
-        results_list = []
-        for document_snapshot in word_snapshots:
-            word_data = document_snapshot.to_dict()
-            if word_data is None:
-                print(
-                    f"LIST_WORDS: Warning - Document {document_snapshot.id} has no data (to_dict() returned None). Skipping."
-                )
-                continue
-            word_data["word_id"] = document_snapshot.id
-            results_list.append(word_data)
-
+    except WordServiceError as e:
         print(
-            f"LIST_WORDS: Prepared results_list with {len(results_list)} items."
+            f"ROUTE: WordServiceError fetching words for UID {g.user_id}: {str(e)}"
         )
-        # print(f"LIST_WORDS: Full results_list: {results_list}") # Optional: very verbose for many words
-        return jsonify(results_list), 200
-
+        return jsonify(
+            {"error": e.message, "context": e.context}
+        ), e.status_code  # 500
     except Exception as e:
         print(
-            f"LIST_WORDS: Error fetching words for user {g.user_id}: {str(e)}"
+            f"ROUTE: Unexpected error fetching words for UID {g.user_id}: {str(e)}"
         )
         return jsonify(
             {"error": "An error occurred while fetching words."}
@@ -124,9 +107,7 @@ def create_word():
         ), e.status_code
 
     except Exception as e:
-        # This 'uid' might not be available if the error happened before it was set in this scope.
-        # The one in g.user_id should be from the before_request hook.
         print(
-            f"ROUTE: Unexpected error in create_word for UID {g.user_id if hasattr(g, 'user_id') else 'unknown'}: {str(e)}"
+            f"ROUTE: Unexpected error in list_words for UID {g.user_id}: {str(e)}"
         )
         return jsonify({"error": "An unexpected server error occurred."}), 500
