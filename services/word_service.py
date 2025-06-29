@@ -10,7 +10,13 @@ from utils.exceptions import (
 )
 
 
-def create_word_for_user(db, user_id, word_text_to_add):
+def create_word_for_user(
+    db,
+    user_id: str,
+    word_text_to_add: str,
+    initial_description: str,
+    initial_example: str,
+):
     try:
         existing_words = wd.find_word_by_text_for_user(db, user_id, word_text_to_add)
         if existing_words:
@@ -27,6 +33,8 @@ def create_word_for_user(db, user_id, word_text_to_add):
 
         data_to_save = {
             "word": word_text_to_add,
+            "descriptions": [initial_description],
+            "examples": [initial_example],
             "stars": 0,
             "user_id": user_id,
             "createdAt": firestore.SERVER_TIMESTAMP,
