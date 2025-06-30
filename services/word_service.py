@@ -10,22 +10,57 @@ from utils.exceptions import (
 )
 
 
+def _get_word_existence_details(db, user_id: str, word_text: str) -> dict:
+    """
+    Checks if a word with the given text exists for the user.
+    Returns a dictionary: {"exists": True/False, "word_id": id_or_None}
+    Raises WordServiceError if the underlying DAL call fails.
+    """
+    try:
+        snapshots = wd.find_word_by_text_for_user(db, user_id, word_text)
+
+        if snapshots:
+            return {"exists": True, "word_id": snapshots[0].id}
+        else:
+            return {"exists": False, "word_id": None}
+    except DatabaseError as de:
+        print(
+            f"WordService (helper): DatabaseError during existence check for word '{word_text}', user '{user_id}': {str(de)}"
+        )
+        raise WordServiceError(
+            f"Could not check existence for word '{word_text}' due to a database issue."
+        ) from de
+    except Exception as e:
+        print(
+            f"WordService (helper): Unexpected error during existence check for word '{word_text}', user '{user_id}': {str(e)}"
+        )
+        raise WordServiceError(
+            f"An unexpected error occurred while checking existence for word '{word_text}'."
+        ) from e
+
+
 def create_word_for_user(
     db,
     user_id: str,
     word_text_to_add: str,
     initial_description: str,
     initial_example: str,
-):
+) -> dict:
+    """
+    Creates a new word for the user if it doesn't already exist.
+    Adds initial description and example.
+    Returns a dictionary of the created word's details.
+    Raises DuplicateEntryError if word already exists.
+    Raises WordServiceError for other issues.
+    """
     try:
-        existing_words = wd.find_word_by_text_for_user(db, user_id, word_text_to_add)
-        if existing_words:
-            existing_doc_id = existing_words[0].id
-            print("--------------------------------------------------")
+        existence_details = _get_word_existence_details(db, user_id, word_text_to_add)
+
+        if existence_details["exists"]:
+            existing_doc_id = existence_details["word_id"]
             print(
-                f"Duplicate found: Word '{word_text_to_add}' already exists for user '{user_id}' (Existing Doc ID: {existing_doc_id})."
+                f"WordService: Duplicate found: Word '{word_text_to_add}' for user '{user_id}' (ID: {existing_doc_id})."
             )
-            print("--------------------------------------------------")
             raise DuplicateEntryError(
                 f"Word '{word_text_to_add}' already exists in your list. Try adding a star to the existing entry instead?",
                 conflicting_id=existing_doc_id,
@@ -41,9 +76,11 @@ def create_word_for_user(
             "updatedAt": firestore.SERVER_TIMESTAMP,
         }
 
-        _, new_word_ref = wd.add_word_to_db(db, data_to_save)
+        _timestamp, new_word_ref = wd.add_word_to_db(db, data_to_save)
 
-        print(f"Word added to Firestore with ID: {new_word_ref.id}")
+        print(
+            f"WordService: Word '{word_text_to_add}' added with ID: {new_word_ref.id} for user '{user_id}'."
+        )
         response_data = data_to_save.copy()
         response_data["word_id"] = new_word_ref.id
         # Remove createdAt/updatedAt fields because they hold SERVER_TIMESTAMP
@@ -54,14 +91,41 @@ def create_word_for_user(
         return response_data
     except DuplicateEntryError:
         raise
+    except WordServiceError:
+        raise
     except DatabaseError as de:
-        print(f"WordService: DatabaseError encountered: {str(de)}")
+        print(
+            f"WordService: Unwrapped DatabaseError in create_word_for_user for '{word_text_to_add}', UID '{user_id}': {str(de)}"
+        )
         raise WordServiceError(
             "A database problem occurred while creating your word."
         ) from de
     except Exception as e:
-        print(f"WordService: Unexpected error in create_word_for_user: {str(e)}")
-        raise WordServiceError("An unexpected service error occurred.") from e
+        print(
+            f"WordService: Unexpected error in create_word_for_user for '{word_text_to_add}', UID '{user_id}': {str(e)}"
+        )
+        raise WordServiceError(
+            "An unexpected error occurred in the word service while creating your word."
+        ) from e
+
+
+def check_word_exists(db, user_id: str, word_text: str) -> dict:
+    """
+    Checks if a word exists for a user and returns its status and ID if found.
+    This service function calls the internal helper.
+    """
+    try:
+        existence_details = _get_word_existence_details(db, user_id, word_text)
+        return existence_details
+    except WordServiceError:
+        raise
+    except Exception as e:
+        print(
+            f"WordService: Unexpected error in check_word_exists_service for word '{word_text}', UID '{user_id}': {str(e)}"
+        )
+        raise WordServiceError(
+            "An unexpected error occurred while checking word existence."
+        ) from e
 
 
 def list_words_for_user(db, user_id):
