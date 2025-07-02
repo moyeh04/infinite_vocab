@@ -158,7 +158,7 @@ def list_words_for_user(db, user_id):
         ) from e
 
 
-def get_word_details_for_user(db, current_user_uid: str, target_word_id: str):
+def get_word_details_for_user(db, current_user_id: str, target_word_id: str):
     """
     Fetches details for a specific word if it exists and belongs to the user.
     Raises NotFoundError if word doesn't exist or doesn't belong to the user.
@@ -173,7 +173,7 @@ def get_word_details_for_user(db, current_user_uid: str, target_word_id: str):
         word_data = snapshot.to_dict()
 
         # Ownership Check: Does the 'user_id' field in the word match the current user?
-        if word_data.get("user_id") != current_user_uid:
+        if word_data.get("user_id") != current_user_id:
             raise NotFoundError(
                 f"Word with ID '{target_word_id}' not found or you do not have permission to view it."
             )
