@@ -1,13 +1,7 @@
 from flask import Blueprint, g, jsonify, request
 
 from middleware.firebase_auth_check import firebase_token_required
-from services.word_service import (
-    check_word_exists,
-    create_word_for_user,
-    get_word_details_for_user,
-    list_words_for_user,
-    star_word_for_user,
-)
+from services import word_service as ws
 from utils.exceptions import (
     # DatabaseError, # It will rise as WordServiceError
     DuplicateEntryError,
@@ -37,7 +31,7 @@ def check_word_existence():
 
     print(f"ROUTE: Checking existence for word '{word_text}' for UID {g.user_id}")
     try:
-        existence_details = check_word_exists(g.db, g.user_id, word_text)
+        existence_details = ws.check_word_exists(g.db, g.user_id, word_text)
         return jsonify(existence_details), 200
     except WordServiceError as e:
         print(
@@ -81,7 +75,7 @@ def create_word():
     )
 
     try:
-        new_word_details = create_word_for_user(
+        new_word_details = ws.create_word_for_user(
             g.db, g.user_id, word, initial_description, initial_example
         )
 
@@ -106,7 +100,7 @@ def create_word():
 def list_words():
     print(f"ROUTE: Attempting to fetch words for UID: {g.user_id}")
     try:
-        word_list_data = list_words_for_user(g.db, g.user_id)
+        word_list_data = ws.list_words_for_user(g.db, g.user_id)
         return jsonify(word_list_data), 200
     except WordServiceError as e:
         print(f"ROUTE: WordServiceError fetching words for UID {g.user_id}: {str(e)}")
@@ -122,10 +116,9 @@ def word_stats(word_id: str):
         f"ROUTE: Attempting to fetch word details for word_id: {word_id}, UID: {g.user_id}"
     )
     try:
-        word_details = get_word_details_for_user(g.db, g.user_id, word_id)
+        word_details = ws.get_word_details_for_user(g.db, g.user_id, word_id)
 
         return jsonify(word_details), 200
-
     except NotFoundError as e:
         print(f"ROUTE: NotFoundError for word_id {word_id}, UID {g.user_id} - {str(e)}")
         return jsonify({"error": str(e)}), e.status_code  # 404
@@ -144,7 +137,7 @@ def word_stats(word_id: str):
 @words_bp.route("/<word_id>/star", methods=["POST"])
 def star_word(word_id):
     try:
-        success_data = star_word_for_user(g.db, g.user_id, word_id)
+        success_data = ws.star_word_for_user(g.db, g.user_id, word_id)
         return jsonify(success_data), 200
     except NotFoundError as e:
         print(f"ROUTE: Word not found - {str(e)}")
