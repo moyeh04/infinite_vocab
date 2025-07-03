@@ -38,7 +38,14 @@ def _execute_word_query(
 
 
 def find_word_by_text_for_user(db, user_id: str, word_text: str):
-    """Finds a specific word by its text for a given user, expects 0 or 1 result."""
+    """
+    Finds a specific word by its text for a given user, expects 0 or 1 result.
+
+    Important:
+        This DAL function is tailored for checking if a word entry with the exact
+        text already exists for the specified user, primarily for duplicate prevention.
+        It calls the generic _execute_word_query with a limit of 1.
+    """
     print(f"DAL: Finding word by text '{word_text}' for user {user_id}")
     filters = [("word", "==", word_text)]
     return _execute_word_query(db, user_id, additional_filters=filters, limit_count=1)

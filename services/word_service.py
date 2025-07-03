@@ -15,6 +15,12 @@ def _get_word_existence_details(db, user_id: str, word_text: str) -> dict:
     Checks if a word with the given text exists for the user.
     Returns a dictionary: {"exists": True/False, "word_id": id_or_None}
     Raises WordServiceError if the underlying DAL call fails.
+
+    Important:
+        This service helper centralizes the logic for calling the DAL to find a word by text
+        and translating the DAL's raw snapshot result into a clear business-relevant status
+        (existence and ID). It's used by other service functions like create_word_for_user
+        and check_word_exists_service.
     """
     try:
         snapshots = wd.find_word_by_text_for_user(db, user_id, word_text)
