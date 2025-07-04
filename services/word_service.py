@@ -46,7 +46,10 @@ def _get_word_existence_details(db, user_id: str, word_text: str) -> dict:
 
 
 def _get_and_verify_word_ownership(
-    db, current_user_id: str, target_word_id: str
+    db,
+    current_user_id: str,
+    target_word_id: str,
+    fetch_subcollections: bool = False,  # For performance
 ) -> dict:
     """
     Internal helper to fetch a word by ID, check existence, and verify ownership.
@@ -71,7 +74,12 @@ def _get_and_verify_word_ownership(
                 f"Word with ID '{target_word_id}' not found or not accessible."
             )
 
-        word_data["id"] = snapshot.id
+        word_data["word_id"] = snapshot.id
+        if fetch_subcollections:
+            word_data["descriptions"] = wd.get_all_descriptions_for_word(
+                db, target_word_id
+            )
+            word_data["examples"] = wd.get_all_examples_for_word(db, target_word_id)
         return word_data
     except NotFoundError:
         raise
@@ -95,8 +103,8 @@ def create_word_for_user(
     db,
     user_id: str,
     word_text_to_add: str,
-    initial_description: str,
-    initial_example: str,
+    initial_description_text: str,
+    initial_example_text: str,
 ) -> dict:
     """
     Creates a new word for the user if it doesn't already exist.
@@ -118,28 +126,78 @@ def create_word_for_user(
                 conflicting_id=existing_doc_id,
             )
 
-        data_to_save = {
+        # 1. Prepare data for the MAIN WORD document
+        word_document_data = {
             "word": word_text_to_add,
-            "descriptions": [initial_description],
-            "examples": [initial_example],
             "stars": 0,
             "user_id": user_id,
             "createdAt": firestore.SERVER_TIMESTAMP,
             "updatedAt": firestore.SERVER_TIMESTAMP,
         }
 
-        _timestamp, new_word_ref = wd.add_word_to_db(db, data_to_save)
+        # 2. Create the MAIN WORD document using the DAL
+        _timestamp, new_word_ref = wd.add_word_to_db(db, word_document_data)
+        created_word_id = new_word_ref.id
 
         print(
-            f"WordService: Word '{word_text_to_add}' added with ID: {new_word_ref.id} for user '{user_id}'."
+            f"WordService: Word '{word_text_to_add}' added with ID: {created_word_id} for user '{user_id}'."
         )
-        response_data = data_to_save.copy()
-        response_data["word_id"] = new_word_ref.id
-        # Remove createdAt/updatedAt fields because they hold SERVER_TIMESTAMP
-        # sentinels which cannot be directly converted to JSON by jsonify.
-        del response_data["createdAt"]
-        del response_data["updatedAt"]
 
+        # 3. Add the initial description to its 'descriptions' subcollection
+        initial_desc_data = {
+            "description": initial_description_text,
+            "is_initial": True,
+            "createdAt": firestore.SERVER_TIMESTAMP,
+            "user_id": user_id,
+        }
+        _desc_timestamp, new_desc_ref = wd.append_description_to_word_db(
+            db, created_word_id, initial_desc_data
+        )
+
+        # Fetch the newly created description document
+        initial_description_doc = new_desc_ref.get()
+        initial_description_data_for_response = None
+        if initial_description_doc.exists:
+            initial_description_data_for_response = initial_description_doc.to_dict()
+            initial_description_data_for_response["description_id"] = (
+                initial_description_doc.id
+            )
+
+        # 4. Add the initial example to its 'examples' subcollection
+        initial_ex_data = {
+            "example": initial_example_text,
+            "is_initial": True,
+            "createdAt": firestore.SERVER_TIMESTAMP,
+            "user_id": user_id,
+        }
+        _ex_timestamp, new_ex_ref = wd.append_example_to_word_db(
+            db, created_word_id, initial_ex_data
+        )
+
+        # Fetch the newly created example document
+        initial_example_doc = new_ex_ref.get()
+        initial_example_data_for_response = None
+        if initial_example_doc.exists:
+            initial_example_data_for_response = initial_example_doc.to_dict()
+            initial_example_data_for_response["example_id"] = initial_example_doc.id
+
+        # 5. Prepare the response data
+        response_data = {
+            "word_id": created_word_id,
+            "word": word_text_to_add,
+            "stars": 0,
+            "user_id": user_id,
+            "descriptions": (
+                [initial_description_data_for_response]
+                if initial_description_data_for_response
+                else []
+            ),
+            "examples": (
+                [initial_example_data_for_response]
+                if initial_example_data_for_response
+                else []
+            ),
+        }
         return response_data
     except DuplicateEntryError:
         raise
@@ -188,7 +246,9 @@ def edit_word_for_user(db, user_id: str, word_id: str, new_word_text: str) -> di
     """
     try:
         # First we check existence and verify ownership
-        old_word_data = _get_and_verify_word_ownership(db, user_id, word_id)
+        old_word_data = _get_and_verify_word_ownership(
+            db, user_id, word_id, fetch_subcollections=True
+        )
 
         # # Check if the new text is actually different from the old one (optional, but good UX)
         # # This prevents an unnecessary DB write if the text is the same.
@@ -206,7 +266,9 @@ def edit_word_for_user(db, user_id: str, word_id: str, new_word_text: str) -> di
         # The DAL's edit_word_by_id doesn't return the updated document.
         # So, let's call the helper again to get the fresh data.
 
-        new_word_data = _get_and_verify_word_ownership(db, user_id, word_id)
+        new_word_data = _get_and_verify_word_ownership(
+            db, user_id, word_id, fetch_subcollections=True
+        )
         # Note: old_word_data['word'] would still have the old text.
         # new_word_data_with_id['word'] will have the new_word_text.
         print(
@@ -242,7 +304,9 @@ def delete_word_for_user(db, user_id: str, word_id: str) -> dict:
     Raises NotFoundError if word not found/owned, or WordServiceError for other issues.
     """
     try:
-        word_to_delete_data = _get_and_verify_word_ownership(db, user_id, word_id)
+        word_to_delete_data = _get_and_verify_word_ownership(
+            db, user_id, word_id, fetch_subcollections=False
+        )
 
         wd.delete_word_by_id(db, word_id)
         print(
@@ -275,11 +339,16 @@ def list_words_for_user(db, user_id):
     try:
         word_snapshots = wd.get_all_words_for_user_sorted_by_stars(db, user_id)
         results_list = []
-        for document_snapshot in word_snapshots:
-            word_data = document_snapshot.to_dict()
-            word_data["word_id"] = document_snapshot.id
-            results_list.append(word_data)
+        for snapshot in word_snapshots:
+            word_data = snapshot.to_dict()
+            current_word_id = snapshot.id
+            word_data["word_id"] = current_word_id
+            word_data["descriptions"] = wd.get_all_descriptions_for_word(
+                db, current_word_id
+            )
+            word_data["examples"] = wd.get_all_examples_for_word(db, current_word_id)
 
+            results_list.append(word_data)
         print(
             f"WordService: Prepared results_list with {len(results_list)} items for user {user_id}."
         )
@@ -302,21 +371,38 @@ def list_words_for_user(db, user_id):
 
 
 def add_description_for_user(
-    db, current_user_id: str, word_id: str, description_text: str
+    db,
+    current_user_id: str,
+    word_id: str,
+    description_text: str,
+    initial_description: bool = False,
 ):
     """
     Adds a description to an existing word, after verifying ownership.
+    Returns details including the new description's ID.
     """
     try:
         # We don't need the word data here, because we are going to add a description, not getting word details.
         # The function will automatically raise an error if the word doesn't exist or the user doesn't own it.
         _ = _get_and_verify_word_ownership(db, current_user_id, word_id)
         # If this check passes then we can add the description.
-        wd.append_description_to_word_db(db, word_id, description_text)
+        description_data = {
+            "description": description_text,
+            "word_id": word_id,
+            "initial_description": initial_description,
+            "createdAt": firestore.SERVER_TIMESTAMP,
+            "updatedAt": firestore.SERVER_TIMESTAMP,
+            "user_id": current_user_id,
+        }
+        new_description_ref = wd.append_description_to_word_db(
+            db, word_id, description_data
+        )
+        new_description_id = new_description_ref.id
 
         return {
-            "message": f"Description '{description_text}' added successfully.",
+            "message": f"Description added successfully to word '{word_id}'.",
             "word_id": word_id,
+            "description_id": new_description_id,
         }
     except NotFoundError:
         raise
@@ -336,17 +422,37 @@ def add_description_for_user(
         ) from e
 
 
-def add_example_for_user(db, current_user_id: str, word_id: str, example_text: str):
+def add_example_for_user(
+    db,
+    current_user_id: str,
+    word_id: str,
+    example_text: str,
+    initial_example: bool = False,
+):
     """
-    Adds an example to an existing word, after verifying ownership.
+    Adds a example to an existing word, after verifying ownership.
+    Returns details including the new description's ID.
     """
     try:
+        # We don't need the word data here, because we are going to add a example, not getting word details.
+        # The function will automatically raise an error if the word doesn't exist or the user doesn't own it.
         _ = _get_and_verify_word_ownership(db, current_user_id, word_id)
-        wd.append_example_to_word_db(db, word_id, example_text)
+        # If this check passes then we can add the example.
+        example_data = {
+            "description": example_text,
+            "word_id": word_id,
+            "initial_description": initial_example,
+            "createdAt": firestore.SERVER_TIMESTAMP,
+            "updatedAt": firestore.SERVER_TIMESTAMP,
+            "user_id": current_user_id,
+        }
+        new_example_ref = wd.append_example_to_word_db(db, word_id, example_data)
+        new_example_id = new_example_ref.id
 
         return {
-            "message": f"Example '{example_text}' added successfully.",
+            "message": f"Example added successfully to word '{word_id}'.",
             "word_id": word_id,
+            "example_id": new_example_id,
         }
     except NotFoundError:
         raise
@@ -371,7 +477,7 @@ def get_word_details_for_user(db, current_user_id: str, target_word_id: str) -> 
     Fetches details for a specific word if it exists and belongs to the user.
     """
     word_data_with_id = _get_and_verify_word_ownership(
-        db, current_user_id, target_word_id
+        db, current_user_id, target_word_id, fetch_subcollections=True
     )
     return word_data_with_id
 
