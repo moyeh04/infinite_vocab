@@ -180,6 +180,61 @@ def check_word_exists(db, user_id: str, word_text: str) -> dict:
         ) from e
 
 
+def edit_word_for_user(db, user_id: str, word_id: str, new_word_text: str) -> dict:
+    """
+    Updates the text of an existing word after verifying ownership.
+    Returns a dictionary with a success message and the word_id.
+    Raises NotFoundError, ForbiddenError, or WordServiceError.
+    """
+    try:
+        # First we check existence and verify ownership
+        old_word_data = _get_and_verify_word_ownership(db, user_id, word_id)
+
+        # # Check if the new text is actually different from the old one (optional, but good UX)
+        # # This prevents an unnecessary DB write if the text is the same.
+        # if old_word_data.get("word") == new_word_text:
+        #     return {
+        #         "message": f"Word text for ID '{word_id}' is already '{new_word_text}'. No update performed.",
+        #         "word_id": word_id,
+        #         "updated_word_details": old_word_data # Return the existing data
+        #     }
+
+        wd.edit_word_by_id(db, word_id, new_word_text)
+
+        # To return the *updated* word, we should fetch it again AFTER the update.
+        # The 'old_word_data' is from before the update.
+        # The DAL's edit_word_by_id doesn't return the updated document.
+        # So, let's call the helper again to get the fresh data.
+
+        new_word_data = _get_and_verify_word_ownership(db, user_id, word_id)
+        # Note: old_word_data['word'] would still have the old text.
+        # new_word_data_with_id['word'] will have the new_word_text.
+        print(
+            f"WordService: Word ID '{word_id}' text updated from '{old_word_data.get('word')}' to '{new_word_data.get('word')}' for user '{user_id}'."
+        )
+        return {
+            "message": f"Word '{old_word_data.get('word', word_id)}' successfully updated to '{new_word_data.get('word')}'.",
+            "word_id": word_id,
+            "updated_word_details": new_word_data,
+        }
+    except NotFoundError:
+        raise
+    except DatabaseError as de:
+        print(
+            f"WordService: DatabaseError updating text for word '{word_id}', user '{user_id}': {str(de)}"
+        )
+        raise WordServiceError(
+            "Could not update word text due to a data access issue."
+        ) from de
+    except Exception as e:
+        print(
+            f"WordService: Unexpected error updating text for word '{word_id}', user '{user_id}': {str(e)}"
+        )
+        raise WordServiceError(
+            "An unexpected service error occurred while updating word text."
+        ) from e
+
+
 def list_words_for_user(db, user_id):
     try:
         word_snapshots = wd.get_all_words_for_user_sorted_by_stars(db, user_id)

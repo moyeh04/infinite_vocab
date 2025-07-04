@@ -134,6 +134,37 @@ def word_stats(word_id: str):
         return jsonify({"error": "An unexpected server error occurred."}), 500
 
 
+@words_bp.route("/<word_id>", methods=["PATCH"])
+def update_word(word_id: str):
+    try:
+        request_data = request.get_json()
+        if not request_data:
+            return jsonify({"error": "Missing or invalid JSON request body"}), 400
+
+        word_text = request_data.get("word")
+        if not word_text or not word_text.strip():
+            return jsonify({"error": "Missing or empty 'word' field in JSON body"}), 400
+        word_text = word_text.strip()
+
+        print(f"Input validation passed. Word to rename: {word_text}")
+        success_data = ws.edit_word_for_user(g.db, g.user_id, word_id, word_text)
+        return jsonify(success_data), 200
+    except NotFoundError as e:
+        print(f"ROUTE: Word not found - {str(e)}")
+        return jsonify({"error": str(e)}), e.status_code  # 404
+    except ForbiddenError as e:
+        print(f"ROUTE: Forbidden to edit word - {str(e)}")
+        return jsonify({"error": str(e)}), e.status_code  # 403
+    except WordServiceError as e:
+        print(f"ROUTE: WordServiceError - {str(e)}")
+        return jsonify({"error": e.message, "context": e.context}), e.status_code  # 500
+    except Exception as e:
+        print(
+            f"ROUTE: Unexpected error in edit_word_for_user for word_id {word_id}: {str(e)}"
+        )
+        return jsonify({"error": "An unexpected server error occurred."}), 500
+
+
 @words_bp.route("/<word_id>/star", methods=["POST"])
 def star_word(word_id):
     try:

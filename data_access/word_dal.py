@@ -67,6 +67,29 @@ def get_word_by_id(db, word_id):
         ) from e
 
 
+def edit_word_by_id(db, word_id, new_word_text):
+    """
+    Updates the 'word' text and 'updatedAt' timestamp for a specific word document.
+    Returns True on success. Raises DatabaseError on failure.
+    """
+    try:
+        word_ref = db.collection("words").document(word_id)
+        data_to_update = {
+            "word": new_word_text,
+            "updatedAt": firestore.SERVER_TIMESTAMP,
+        }
+        word_ref.update(data_to_update)
+        print(f"DAL: Updated word text for ID '{word_id}' to '{new_word_text}'")
+        return True
+    except Exception as e:
+        print(
+            f"DAL_ERROR: Error updating word text for ID '{word_id}' to '{new_word_text}': {str(e)}"
+        )
+        raise DatabaseError(
+            f"DAL: Firestore error updating word text for ID '{word_id}' to '{new_word_text}': {str(e)}"
+        ) from e
+
+
 def get_all_words_for_user_sorted_by_stars(db, user_id: str):
     """Gets all words for a user, sorted by stars descending."""
     print(f"DAL: Getting all words for user {user_id}, sorted by stars")
