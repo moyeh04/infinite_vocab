@@ -165,6 +165,29 @@ def update_word(word_id: str):
         return jsonify({"error": "An unexpected server error occurred."}), 500
 
 
+@words_bp.route("/<word_id>", methods=["DELETE"])
+def delete_word(word_id: str):
+    """
+    Delete a word associated with the current user.
+    """
+    try:
+        print(f"[DELETE /{word_id}] User {g.user_id} - Deleting word...")
+        success_data = ws.delete_word_for_user(g.db, g.user_id, word_id)
+        print(f"[DELETE /{word_id}] User {g.user_id} - Successfully deleted word.")
+        return jsonify(success_data), 200
+    except NotFoundError as e:
+        print(f"[DELETE /{word_id}] User {g.user_id} - Word not found: {str(e)}")
+        return jsonify({"error": str(e)}), e.status_code  # 404
+    except WordServiceError as e:
+        print(
+            f"[DELETE /{word_id}] User {g.user_id} - Service error: {e.message} | Context: {e.context}"
+        )
+        return jsonify({"error": e.message, "context": e.context}), e.status_code  # 500
+    except Exception as e:
+        print(f"[DELETE /{word_id}] User {g.user_id} - Unexpected error: {str(e)}")
+        return jsonify({"error": "An unexpected server error occurred."}), 500
+
+
 @words_bp.route("/<word_id>/star", methods=["POST"])
 def star_word(word_id):
     try:

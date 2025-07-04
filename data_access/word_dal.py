@@ -90,6 +90,22 @@ def edit_word_by_id(db, word_id, new_word_text):
         ) from e
 
 
+def delete_word_by_id(db, word_id: str):
+    """
+    Deletes a word document from Firestore by its ID.
+    Returns True on success. Raises DatabaseError on failure.
+    """
+    try:
+        _ = db.collection("words").document(word_id).delete()
+        print(f"DAL: Successfully deleted word with ID '{word_id}'")
+        return True
+    except Exception as e:
+        print(f"DAL_ERROR: Error deleting word ID '{word_id}': {str(e)}")
+        raise DatabaseError(
+            f"DAL: Firestore error deleting word ID '{word_id}': {str(e)}"
+        ) from e
+
+
 def get_all_words_for_user_sorted_by_stars(db, user_id: str):
     """Gets all words for a user, sorted by stars descending."""
     print(f"DAL: Getting all words for user {user_id}, sorted by stars")
