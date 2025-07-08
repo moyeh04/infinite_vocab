@@ -9,7 +9,7 @@ def _handle_existing_user(user_doc_ref, user_doc, user_name):
     Retrieves the code, updates name if needed, generates/adds code if missing.
     Returns the user code or None on failure within this step.
     """
-    print(f"Document found for UID {user_doc_ref.id} in 'users' collection.")
+    print(f"Document found for user_id {user_doc_ref.id} in 'users' collection.")
 
     user_data = user_doc.to_dict() or {}
     existing_code = user_data.get("code")
@@ -24,7 +24,7 @@ def _handle_existing_user(user_doc_ref, user_doc, user_name):
         data_to_update["name"] = user_name
         needs_update = True
         print(
-            f"Name mismatch for UID {user_doc_ref.id}. Stored: {stored_name}, Provided: {user_name}. Will update name."
+            f"Name mismatch for user_id {user_doc_ref.id}. Stored: {stored_name}, Provided: {user_name}. Will update name."
         )
 
     # Check if the code was found in the existing document
@@ -35,7 +35,7 @@ def _handle_existing_user(user_doc_ref, user_doc, user_name):
     else:
         # Document exists but the code field is missing.
         print(
-            f"Warning: Document for UID {user_doc_ref.id} exists but contains no user code. Generating new."
+            f"Warning: Document for user_id {user_doc_ref.id} exists but contains no user code. Generating new."
         )
         needs_update = True
         # Generate a new code
@@ -48,10 +48,12 @@ def _handle_existing_user(user_doc_ref, user_doc, user_name):
         data_to_update["updatedAt"] = firestore.SERVER_TIMESTAMP
         try:
             user_doc_ref.update(data_to_update)
-            print(f"Updated document for UID {user_doc_ref.id} with: {data_to_update}")
+            print(
+                f"Updated document for user_id {user_doc_ref.id} with: {data_to_update}"
+            )
         except Exception as e:
             print(
-                f"Error updating document for UID {user_doc_ref.id} with {data_to_update}: {e}"
+                f"Error updating document for user_id {user_doc_ref.id} with {data_to_update}: {e}"
             )
             return None
 
@@ -66,7 +68,7 @@ def _handle_new_user(user_doc_ref, user_name):
     Returns the new user code or None on failure within this step.
     """
     print(
-        f"Document not found for UID {user_doc_ref.id} in 'users' collection. Generating and saving new code."
+        f"Document not found for user_id {user_doc_ref.id} in 'users' collection. Generating and saving new code."
     )
 
     # Generate a new unique code for the user
@@ -84,29 +86,29 @@ def _handle_new_user(user_doc_ref, user_name):
     try:
         user_doc_ref.set(data_to_save)
         print(
-            f"Created new document for UID {user_doc_ref.id} in 'users' with code {new_user_code}"
+            f"Created new document for user_id {user_doc_ref.id} in 'users' with code {new_user_code}"
         )
     except Exception as e:
-        print(f"Error creating document for UID {user_doc_ref.id}: {e}")
+        print(f"Error creating document for user_id {user_doc_ref.id}: {e}")
         return None
 
     return new_user_code
 
 
-def get_or_create_user_code(uid, user_name):
+def get_or_create_user_code(user_id, user_name):
     """
-    Checks Firestore for an existing user code for the given UID.
+    Checks Firestore for an existing user code for the given user_id.
     If found, returns it. If not, generates a new one and saves it.
     Optionally updates the user's name if different from stored name.
     Returns the user code (string) or None on failure.
     """
     db = firestore.client()
 
-    user_doc_ref = db.collection("users").document(uid)
+    user_doc_ref = db.collection("users").document(user_id)
 
     try:
         user_doc = user_doc_ref.get()
-        print(f"Attempted to get document for UID: {uid}")
+        print(f"Attempted to get document for user_id: {user_id}")
 
         # --- MAIN BRANCHING POINT: Delegate based on document existence ---
         if user_doc.exists:
@@ -118,5 +120,5 @@ def get_or_create_user_code(uid, user_name):
 
     except Exception as e:
         # This catch is for errors during the initial .get() operation itself
-        print(f"Error during initial document get for UID {uid}: {e}")
+        print(f"Error during initial document get for user_id {user_id}: {e}")
         return None

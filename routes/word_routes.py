@@ -1,5 +1,4 @@
 from flask import Blueprint, g, jsonify, request
-
 from middleware.firebase_auth_check import firebase_token_required
 from services import word_service as ws
 from utils.exceptions import (
@@ -29,18 +28,18 @@ def check_word_existence():
         return jsonify({"error": "Missing or empty 'word' field in JSON body"}), 400
     word_text = word_text.strip()
 
-    print(f"ROUTE: Checking existence for word '{word_text}' for UID {g.user_id}")
+    print(f"ROUTE: Checking existence for word '{word_text}' for user_id {g.user_id}")
     try:
         existence_details = ws.check_word_exists(g.db, g.user_id, word_text)
         return jsonify(existence_details), 200
     except WordServiceError as e:
         print(
-            f"ROUTE: WordServiceError during check_existence for word '{word_text}', UID {g.user_id}: {str(e)}"
+            f"ROUTE: WordServiceError during check_existence for word '{word_text}', user_id {g.user_id}: {str(e)}"
         )
         return jsonify({"error": e.message, "context": e.context}), e.status_code
     except Exception as e:
         print(
-            f"ROUTE: Unexpected error in check_existence for word '{word_text}', UID {g.user_id}: {str(e)}"
+            f"ROUTE: Unexpected error in check_existence for word '{word_text}', user_id {g.user_id}: {str(e)}"
         )
         return jsonify(
             {"error": "An unexpected error occurred while checking word existence."}
@@ -92,44 +91,52 @@ def create_word():
         print(f"ROUTE: WordServiceError - {str(e)}")
         return jsonify({"error": e.message, "context": e.context}), e.status_code
     except Exception as e:
-        print(f"ROUTE: Unexpected error in list_words for UID {g.user_id}: {str(e)}")
+        print(
+            f"ROUTE: Unexpected error in create_word for user_id {g.user_id}: {str(e)}"
+        )
         return jsonify({"error": "An unexpected server error occurred."}), 500
 
 
 @words_bp.route("/", methods=["GET"])
 def list_words():
-    print(f"ROUTE: Attempting to fetch words for UID: {g.user_id}")
+    print(f"ROUTE: Attempting to fetch words for user_id: {g.user_id}")
     try:
         word_list_data = ws.list_words_for_user(g.db, g.user_id)
         return jsonify(word_list_data), 200
     except WordServiceError as e:
-        print(f"ROUTE: WordServiceError fetching words for UID {g.user_id}: {str(e)}")
+        print(
+            f"ROUTE: WordServiceError fetching words for user_id {g.user_id}: {str(e)}"
+        )
         return jsonify({"error": e.message, "context": e.context}), e.status_code  # 500
     except Exception as e:
-        print(f"ROUTE: Unexpected error fetching words for UID {g.user_id}: {str(e)}")
+        print(
+            f"ROUTE: Unexpected error fetching words for user_id {g.user_id}: {str(e)}"
+        )
         return jsonify({"error": "An error occurred while fetching words."}), 500
 
 
 @words_bp.route("/<word_id>", methods=["GET"])
-def word_stats(word_id: str):
+def get_word_details(word_id: str):
     print(
-        f"ROUTE: Attempting to fetch word details for word_id: {word_id}, UID: {g.user_id}"
+        f"ROUTE: Attempting to fetch word details for word_id: {word_id}, user_id: {g.user_id}"
     )
     try:
         word_details = ws.get_word_details_for_user(g.db, g.user_id, word_id)
 
         return jsonify(word_details), 200
     except NotFoundError as e:
-        print(f"ROUTE: NotFoundError for word_id {word_id}, UID {g.user_id} - {str(e)}")
+        print(
+            f"ROUTE: NotFoundError for word_id {word_id}, user_id {g.user_id} - {str(e)}"
+        )
         return jsonify({"error": str(e)}), e.status_code  # 404
     except WordServiceError as e:
         print(
-            f"ROUTE: WordServiceError for word_id {word_id}, UID {g.user_id} - {str(e)}"
+            f"ROUTE: WordServiceError for word_id {word_id}, user_id {g.user_id} - {str(e)}"
         )
         return jsonify({"error": e.message, "context": e.context}), e.status_code  # 500
     except Exception as e:
         print(
-            f"ROUTE: Unexpected error in get_word_details_route for word_id {word_id}, UID {g.user_id}: {str(e)}"
+            f"ROUTE: Unexpected error in get_word_details_route for word_id {word_id}, user_id {g.user_id}: {str(e)}"
         )
         return jsonify({"error": "An unexpected server error occurred."}), 500
 

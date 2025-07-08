@@ -10,10 +10,10 @@ def firebase_token_required():
     try:
         id_token = auth_header[7:]  # Or split(' ')[1]
         decoded_token = auth.verify_id_token(id_token)
-        uid = decoded_token["uid"]
-        g.user_id = uid
+        user_id = decoded_token["uid"]
+        g.user_id = user_id
         g.db = firestore.client()
-        print(f"AUTH_MIDDLEWARE: Token verified for UID: {uid}")
+        print(f"AUTH_MIDDLEWARE: Token verified for user_id: {user_id}")
 
     except Exception as e:
         print(f"Error verifying Firebase ID token: {e}")

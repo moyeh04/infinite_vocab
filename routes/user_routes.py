@@ -13,7 +13,7 @@ def authentication_before_request():
 
 @user_bp.route("/", methods=["POST"])
 def generate_user():
-    uid = g.user_id
+    user_id = g.user_id
     try:
         request_data = request.get_json()
         if not request_data:
@@ -26,25 +26,25 @@ def generate_user():
         user_name = user_name.strip()
 
         # --- Call the user service to get or create the user's application code ---
-        user_code = usr_code(uid, user_name)
+        user_code = usr_code(user_id, user_name)
 
         # --- Check if the user service returned a valid code ---
         if user_code is None:
             # If the service function returned None, it means there was an error getting/creating the code
-            print(f"Error: Failed to get or create user code for UID {uid}.")
+            print(f"Error: Failed to get or create user code for user_id {user_id}.")
             # Return a 500 Internal Server Error to indicate a server-side problem
             return jsonify({"error": "Failed to retrieve or create user data"}), 500
 
         return jsonify(
             {
                 "message": "User authenticated successfully",
-                "uid": uid,
+                "user_id": user_id,
                 "name": user_name,
-                "userCode": user_code,
+                "user_code": user_code,
             }
         ), 201
     except Exception as e:
         print(
-            f"Unexpected error in generate_user for UID {uid if 'uid' in locals() else 'unknown'}: {str(e)}"
+            f"Unexpected error in generate_user for user_id {user_id if 'user_id' in locals() else 'unknown'}: {str(e)}"
         )
         return jsonify({"error": "An unexpected server error occurred"}), 500

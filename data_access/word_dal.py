@@ -224,7 +224,7 @@ def get_all_examples_for_word(db, word_id: str) -> list:
 
 
 @firestore.transactional
-def atomic_update(transaction, db, word_id, current_user_id):
+def atomic_update(transaction, db, word_id, user_id):
     try:
         # Read
         word_doc_ref = db.collection("words").document(word_id)
@@ -236,7 +236,7 @@ def atomic_update(transaction, db, word_id, current_user_id):
 
         word_data = snapshot.to_dict()
 
-        if word_data.get("user_id") != current_user_id:
+        if word_data.get("user_id") != user_id:
             return "FORBIDDEN"
 
         word_text = word_data.get("word")
@@ -253,7 +253,7 @@ def atomic_update(transaction, db, word_id, current_user_id):
         return (new_star_count, word_text)
     except Exception as e:
         print(
-            f"DAL_ERROR: Error starring words for user {current_user_id}, word '{word_text}': {str(e)}"
+            f"DAL_ERROR: Error starring words for user {user_id}, word '{word_text}': {str(e)}"
         )
         raise DatabaseError(
             f"DAL: Firestore error while querying words: {str(e)}"
