@@ -1,0 +1,38 @@
+meta {
+  name: create_word_empty_description_field
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{apiUrl}}/api/v1/words/
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{idToken}}
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "word": "valid word",
+    "description": "",
+    "example": "Valid example"
+  }
+}
+
+tests {
+  test("Status is 400", function() {
+    expect(res.status).to.equal(400);
+  });
+
+  test("Response has error field", function() {
+    expect(res.body).to.have.property('error');
+  });
+
+  test("Error message mentions description field", function() {
+    expect(res.body.error.toLowerCase()).to.match(/(description|empty|missing)/);
+  });
+}

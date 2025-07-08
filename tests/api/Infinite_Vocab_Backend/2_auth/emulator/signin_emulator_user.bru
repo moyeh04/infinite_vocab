@@ -1,0 +1,48 @@
+meta {
+  name: signin_emulator_user
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{authUrl}}/identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=any
+  body: json
+  auth: none
+}
+
+params:query {
+  key: any
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "email": "{{testEmail}}",
+    "password": "{{testPassword}}",
+    "returnSecureToken": true
+  }
+}
+
+vars:post-response {
+  idToken: res.body.idToken
+  userId: res.body.localId
+}
+
+tests {
+  test("Status is 200", function() {
+    expect(res.status).to.equal(200);
+  });
+  
+  test("Response contains required fields", function() {
+    expect(res.body).to.have.property('idToken');
+    expect(res.body).to.have.property('email');
+    expect(res.body).to.have.property('localId');
+  });
+  
+  test("Email matches request", function() {
+    expect(res.body.email).to.equal(bru.getEnvVar("testEmail"));
+  });
+}

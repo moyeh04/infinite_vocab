@@ -1,0 +1,25 @@
+meta {
+  name: authenticate_user_success
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{apiUrl}}/api/v1/words/
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{idToken}}
+  Content-Type: application/json
+}
+
+tests {
+  test("Status is 200 (authenticated request succeeds)", function() {
+    expect(res.status).to.equal(200);
+  });
+
+  test("Response is array (authenticated user can list words)", function() {
+    expect(res.body).to.be.an('array');
+  });
+}

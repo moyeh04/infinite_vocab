@@ -1,0 +1,79 @@
+meta {
+  name: create_word_duplicate
+  type: http
+  seq: 7
+}
+
+post {
+  url: {{apiUrl}}/api/v1/words/
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{idToken}}
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "word": "duplicate word test",
+    "description": "First instance",
+    "example": "First example"
+  }
+}
+
+tests {
+  test("First creation should succeed", function() {
+    expect(res.status).to.equal(201);
+  });
+}
+
+vars:post-response {
+  duplicateWordId: res.body.wordId
+}
+---
+
+meta {
+  name: create_word_duplicate_attempt
+  type: http
+  seq: 8
+}
+
+post {
+  url: {{apiUrl}}/api/v1/words/
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{idToken}}
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "word": "duplicate word test",
+    "description": "Second instance (should fail)",
+    "example": "Second example (should fail)"
+  }
+}
+
+tests {
+  test("Status is 409 (Conflict)", function() {
+    expect(res.status).to.equal(409);
+  });
+
+  test("Response has conflict information", function() {
+    expect(res.body).to.have.property('message');
+    expect(res.body).to.have.property('existingWordId');
+  });
+
+  test("Existing word ID matches first creation", function() {
+    expect(res.body.existingWordId).to.equal(bru.getVar('duplicateWordId'));
+  });
+
+  test("Error message mentions duplicate", function() {
+    expect(res.body.message.toLowerCase()).to.match(/(duplicate|already exists|conflict)/);
+  });
+}

@@ -1,0 +1,38 @@
+meta {
+  name: create_word_whitespace_word
+  type: http
+  seq: 6
+}
+
+post {
+  url: {{apiUrl}}/api/v1/words/
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{idToken}}
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "word": "   ",
+    "description": "Valid description",
+    "example": "Valid example"
+  }
+}
+
+tests {
+  test("Status is 400", function() {
+    expect(res.status).to.equal(400);
+  });
+
+  test("Response has error field", function() {
+    expect(res.body).to.have.property('error');
+  });
+
+  test("Error message mentions word field", function() {
+    expect(res.body.error.toLowerCase()).to.match(/(word|empty|missing)/);
+  });
+}

@@ -1,0 +1,36 @@
+meta {
+  name: add_description_not_found
+  type: http
+  seq: 5
+}
+
+post {
+  url: {{apiUrl}}/api/v1/words/nonexistent_word_id/descriptions
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{idToken}}
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "description": "This description won't be added"
+  }
+}
+
+tests {
+  test("Status is 404", function() {
+    expect(res.status).to.equal(404);
+  });
+
+  test("Response has error field", function() {
+    expect(res.body).to.have.property('error');
+  });
+
+  test("Error message mentions not found", function() {
+    expect(res.body.error.toLowerCase()).to.match(/(not found|does not exist)/);
+  });
+}

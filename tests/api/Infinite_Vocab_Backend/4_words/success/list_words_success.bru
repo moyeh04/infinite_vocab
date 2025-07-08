@@ -1,0 +1,40 @@
+meta {
+  name: list_words_success
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{apiUrl}}/api/v1/words/
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{idToken}}
+  Content-Type: application/json
+}
+
+tests {
+  test("Status is 200", function() {
+    expect(res.status).to.equal(200);
+  });
+
+  test("Response is array", function() {
+    expect(res.body).to.be.an('array');
+  });
+
+  test("Words have camelCase fields", function() {
+    if (res.body.length > 0) {
+      const word = res.body[0];
+      expect(word).to.have.property('wordId');
+      expect(word).to.have.property('userId');
+      expect(word).to.have.property('word');
+      expect(word).to.have.property('createdAt');
+      expect(word).to.have.property('updatedAt');
+      expect(word).to.have.property('descriptions');
+      expect(word).to.have.property('examples');
+      expect(word.descriptions).to.be.an('array');
+      expect(word.examples).to.be.an('array');
+    }
+  });
+}

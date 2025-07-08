@@ -1,0 +1,28 @@
+meta {
+  name: authenticate_user_no_token
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{apiUrl}}/api/v1/words/
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+tests {
+  test("Status is 401", function() {
+    expect(res.status).to.equal(401);
+  });
+
+  test("Response has error field", function() {
+    expect(res.body).to.have.property('error');
+  });
+
+  test("Error message mentions authentication", function() {
+    expect(res.body.error.toLowerCase()).to.match(/(auth|token|unauthorized)/);
+  });
+}

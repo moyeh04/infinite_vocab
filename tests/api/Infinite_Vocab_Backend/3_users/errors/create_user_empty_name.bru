@@ -1,0 +1,36 @@
+meta {
+  name: create_user_empty_name
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{apiUrl}}/api/v1/users/
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{idToken}}
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "name": ""
+  }
+}
+
+tests {
+  test("Status is 400", function() {
+    expect(res.status).to.equal(400);
+  });
+
+  test("Response has error field", function() {
+    expect(res.body).to.have.property('error');
+  });
+
+  test("Error message mentions name field", function() {
+    expect(res.body.error.toLowerCase()).to.match(/(name|empty|missing)/);
+  });
+}
