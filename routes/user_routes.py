@@ -1,7 +1,12 @@
-from flask import Blueprint, g, jsonify, request
+from flask import Blueprint, g, request
 
 from middleware.firebase_auth_check import firebase_token_required
 from services.user_service import get_or_create_user_code as usr_code
+from utils.response_helpers import (
+    camelized_response,
+    decamelized_request,
+    error_response,
+)
 
 user_bp = Blueprint("user_api", __name__, url_prefix="/api/v1/users")
 
@@ -17,11 +22,14 @@ def generate_user():
     try:
         request_data = request.get_json()
         if not request_data:
-            return jsonify({"error": "Missing or invalid JSON request body"}), 400
+            return error_response("Missing or invalid JSON request body", 400)
 
-        user_name = request.json.get("name")
+        # Convert camelCase from frontend to snake_case for Python
+        request_data = decamelized_request(request_data)
+
+        user_name = request_data.get("name")
         if not user_name or not user_name.strip():
-            return jsonify({"error": "Missing or empty 'name' field"}), 400
+            return error_response("Missing or empty 'name' field", 400)
 
         user_name = user_name.strip()
 
@@ -33,18 +41,19 @@ def generate_user():
             # If the service function returned None, it means there was an error getting/creating the code
             print(f"Error: Failed to get or create user code for user_id {user_id}.")
             # Return a 500 Internal Server Error to indicate a server-side problem
-            return jsonify({"error": "Failed to retrieve or create user data"}), 500
+            return error_response("Failed to retrieve or create user data", 500)
 
-        return jsonify(
+        return camelized_response(
             {
                 "message": "User authenticated successfully",
                 "user_id": user_id,
                 "name": user_name,
                 "user_code": user_code,
-            }
-        ), 201
+            },
+            201,
+        )
     except Exception as e:
         print(
             f"Unexpected error in generate_user for user_id {user_id if 'user_id' in locals() else 'unknown'}: {str(e)}"
         )
-        return jsonify({"error": "An unexpected server error occurred"}), 500
+        return error_response("An unexpected server error occurred", 500)

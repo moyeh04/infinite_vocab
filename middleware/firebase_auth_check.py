@@ -1,11 +1,13 @@
 from firebase_admin import auth, firestore
-from flask import g, jsonify, request
+from flask import g, request
+
+from utils.response_helpers import error_response
 
 
 def firebase_token_required():
     auth_header = request.headers.get("Authorization")
     if not auth_header or not auth_header.startswith("Bearer "):
-        return jsonify({"error": "Authorization header missing or invalid format"}), 401
+        return error_response("Authorization header missing or invalid format", 401)
 
     try:
         id_token = auth_header[7:]  # Or split(' ')[1]
@@ -18,4 +20,4 @@ def firebase_token_required():
     except Exception as e:
         print(f"Error verifying Firebase ID token: {e}")
 
-        return jsonify({"error": "Invalid or expired authentication token"}), 401
+        return error_response("Invalid or expired authentication token", 401)
