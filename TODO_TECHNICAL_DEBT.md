@@ -7,7 +7,7 @@
 
 ## Medium Priority (Code Quality)
 - [ ] **Remove Redundant Exception Handling**: Fix `except WordServiceError: raise` patterns in services
-- [ ] **Standardize Function Naming**: Rename `usr_code` to `get_user_code` and similar inconsistencies
+- [x] **Standardize Function Naming**: ~~Rename `usr_code` to `get_user_code`~~ and similar inconsistencies
 - [ ] **Logging Migration**: Replace print statements with structured logging using `utils/logging_config.py`
 - [ ] **Layer Identification**: Standardize prefixes (ROUTE:, DAL:, Service:) → use logger names instead
 

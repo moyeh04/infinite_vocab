@@ -1,7 +1,7 @@
 from flask import Blueprint, g, request
 
 from middleware.firebase_auth_check import firebase_token_required
-from services.user_service import get_or_create_user_code as usr_code
+from services.user_service import get_or_create_user_code as get_user_code
 from utils.response_helpers import (
     camelized_response,
     decamelized_request,
@@ -27,14 +27,14 @@ def generate_user():
         # Convert camelCase from frontend to snake_case for Python
         request_data = decamelized_request(request_data)
 
-        user_name = request_data.get("name")
+        user_name = request_data.get("user_name")
         if not user_name or not user_name.strip():
-            return error_response("Missing or empty 'name' field", 400)
+            return error_response("Missing or empty 'userName' field", 400)
 
         user_name = user_name.strip()
 
         # --- Call the user service to get or create the user's application code ---
-        user_code = usr_code(user_id, user_name)
+        user_code = get_user_code(user_id, user_name)
 
         # --- Check if the user service returned a valid code ---
         if user_code is None:
@@ -47,7 +47,7 @@ def generate_user():
             {
                 "message": "User authenticated successfully",
                 "user_id": user_id,
-                "name": user_name,
+                "user_name": user_name,
                 "user_code": user_code,
             },
             201,

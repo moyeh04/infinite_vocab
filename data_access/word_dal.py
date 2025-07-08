@@ -47,7 +47,7 @@ def find_word_by_text_for_user(db, user_id: str, word_text: str):
         It calls the generic _execute_word_query with a limit of 1.
     """
     print(f"DAL: Finding word by text '{word_text}' for user {user_id}")
-    filters = [("word", "==", word_text)]
+    filters = [("word_text", "==", word_text)]
     return _execute_word_query(db, user_id, additional_filters=filters, limit_count=1)
 
 
@@ -69,13 +69,13 @@ def get_word_by_id(db, word_id):
 
 def edit_word_by_id(db, word_id, new_word_text):
     """
-    Updates the 'word' text and 'updatedAt' timestamp for a specific word document.
+    Updates the 'word_text' and 'updatedAt' timestamp for a specific word document.
     Returns True on success. Raises DatabaseError on failure.
     """
     try:
         word_ref = db.collection("words").document(word_id)
         data_to_update = {
-            "word": new_word_text,
+            "word_text": new_word_text,
             "updatedAt": firestore.SERVER_TIMESTAMP,
         }
         word_ref.update(data_to_update)
@@ -118,9 +118,9 @@ def delete_word_by_id(db, word_id: str):
 
 
 def get_all_words_for_user_sorted_by_stars(db, user_id: str):
-    """Gets all words for a user, sorted by stars descending."""
-    print(f"DAL: Getting all words for user {user_id}, sorted by stars")
-    order_config = ("stars", "DESCENDING")
+    """Gets all words for a user, sorted by word_stars descending."""
+    print(f"DAL: Getting all words for user {user_id}, sorted by word_stars")
+    order_config = ("word_stars", "DESCENDING")
     return _execute_word_query(db, user_id, order_by_config=order_config)
 
 
@@ -239,16 +239,16 @@ def atomic_update(transaction, db, word_id, user_id):
         if word_data.get("user_id") != user_id:
             return "FORBIDDEN"
 
-        word_text = word_data.get("word")
+        word_text = word_data.get("word_text")
 
         # Modify
-        current_stars = word_data.get("stars", 0)
+        current_stars = word_data.get("word_stars", 0)
         new_star_count = current_stars + 1
 
         # Write
         transaction.update(
             word_doc_ref,
-            {"stars": new_star_count, "updatedAt": firestore.SERVER_TIMESTAMP},
+            {"word_stars": new_star_count, "updatedAt": firestore.SERVER_TIMESTAMP},
         )
         return (new_star_count, word_text)
     except Exception as e:

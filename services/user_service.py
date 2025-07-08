@@ -12,16 +12,16 @@ def _handle_existing_user(user_doc_ref, user_doc, user_name):
     print(f"Document found for user_id {user_doc_ref.id} in 'users' collection.")
 
     user_data = user_doc.to_dict() or {}
-    existing_code = user_data.get("code")
+    existing_code = user_data.get("user_code")
 
     needs_update = False
     data_to_update = {}
     code_to_return = None
 
     # Check if the provided user_name is different from the stored name (if any)
-    stored_name = user_data.get("name")
+    stored_name = user_data.get("user_name")
     if user_name is not None and user_name != stored_name:
-        data_to_update["name"] = user_name
+        data_to_update["user_name"] = user_name
         needs_update = True
         print(
             f"Name mismatch for user_id {user_doc_ref.id}. Stored: {stored_name}, Provided: {user_name}. Will update name."
@@ -41,7 +41,7 @@ def _handle_existing_user(user_doc_ref, user_doc, user_name):
         # Generate a new code
         new_user_code = generate_random_code(8)
         print(f"Generated new user code: {new_user_code}")
-        data_to_update["code"] = new_user_code
+        data_to_update["user_code"] = new_user_code
         code_to_return = new_user_code
 
     if needs_update:
@@ -77,8 +77,8 @@ def _handle_new_user(user_doc_ref, user_name):
 
     data_to_save = {
         "user_id": user_doc_ref.id,
-        "name": user_name,
-        "code": new_user_code,
+        "user_name": user_name,
+        "user_code": new_user_code,
         "createdAt": firestore.SERVER_TIMESTAMP,
         "updatedAt": firestore.SERVER_TIMESTAMP,
     }

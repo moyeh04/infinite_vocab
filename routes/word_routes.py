@@ -32,9 +32,9 @@ def check_word_existence():
     # Convert camelCase from frontend to snake_case for Python
     request_data = decamelized_request(request_data)
 
-    word_text = request_data.get("word")
+    word_text = request_data.get("word_text")
     if not word_text or not word_text.strip():
-        return error_response("Missing or empty 'word' field in JSON body", 400)
+        return error_response("Missing or empty 'wordText' field in JSON body", 400)
     word_text = word_text.strip()
 
     print(f"ROUTE: Checking existence for word '{word_text}' for user_id {g.user_id}")
@@ -64,28 +64,30 @@ def create_word():
     # Convert camelCase from frontend to snake_case for Python
     request_data = decamelized_request(request_data)
 
-    word = request_data.get("word")
-    if not word or not word.strip():
-        return error_response("Missing or empty 'word' field in JSON body", 400)
-    word = word.strip()
+    word_text = request_data.get("word_text")
+    if not word_text or not word_text.strip():
+        return error_response("Missing or empty 'wordText' field in JSON body", 400)
+    word_text = word_text.strip()
 
-    initial_description = request_data.get("description")
+    initial_description = request_data.get("description_text")
     if not initial_description or not initial_description.strip():
-        return error_response("Missing or empty 'description' field in JSON body", 400)
+        return error_response(
+            "Missing or empty 'descriptionText' field in JSON body", 400
+        )
     initial_description = initial_description.strip()
 
-    initial_example = request_data.get("example")
+    initial_example = request_data.get("example_text")
     if not initial_example or not initial_example.strip():
-        return error_response("Missing or empty 'example' field in JSON body", 400)
+        return error_response("Missing or empty 'exampleText' field in JSON body", 400)
     initial_example = initial_example.strip()
 
     print(
-        f"Input validation passed. Word to add: {word}, Description: {initial_description}, Example: {initial_example}"
+        f"Input validation passed. Word to add: {word_text}, Description: {initial_description}, Example: {initial_example}"
     )
 
     try:
         new_word_details = ws.create_word_for_user(
-            g.db, g.user_id, word, initial_description, initial_example
+            g.db, g.user_id, word_text, initial_description, initial_example
         )
 
         return camelized_response(new_word_details, 201)
@@ -161,9 +163,9 @@ def update_word(word_id: str):
         # Convert camelCase from frontend to snake_case for Python
         request_data = decamelized_request(request_data)
 
-        word_text = request_data.get("word")
+        word_text = request_data.get("word_text")
         if not word_text or not word_text.strip():
-            return error_response("Missing or empty 'word' field in JSON body", 400)
+            return error_response("Missing or empty 'wordText' field in JSON body", 400)
         word_text = word_text.strip()
 
         print(f"Input validation passed. Word to rename: {word_text}")
@@ -237,10 +239,10 @@ def add_description_to_word(word_id: str):
         # Convert camelCase from frontend to snake_case for Python
         request_data = decamelized_request(request_data)
 
-        description_text = request_data.get("description")
+        description_text = request_data.get("description_text")
         if not description_text or not description_text.strip():
             return error_response(
-                "Missing or empty 'description' field in JSON body", 400
+                "Missing or empty 'descriptionText' field in JSON body", 400
             )
         description_text = description_text.strip()
         success_data = ws.add_description_for_user(
@@ -273,9 +275,11 @@ def add_example_to_word(word_id: str):
         # Convert camelCase from frontend to snake_case for Python
         request_data = decamelized_request(request_data)
 
-        example_text = request_data.get("example")
+        example_text = request_data.get("example_text")
         if not example_text or not example_text.strip():
-            return error_response("Missing or empty 'example' field in JSON body", 400)
+            return error_response(
+                "Missing or empty 'exampleText' field in JSON body", 400
+            )
         example_text = example_text.strip()
         success_data = ws.add_example_for_user(g.db, g.user_id, word_id, example_text)
         return camelized_response(success_data, 200)

@@ -126,8 +126,8 @@ def create_word_for_user(
 
         # 1. Prepare data for the MAIN WORD document
         word_document_data = {
-            "word": word_text_to_add,
-            "stars": 0,
+            "word_text": word_text_to_add,
+            "word_stars": 0,
             "user_id": user_id,
             "createdAt": firestore.SERVER_TIMESTAMP,
             "updatedAt": firestore.SERVER_TIMESTAMP,
@@ -143,7 +143,7 @@ def create_word_for_user(
 
         # 3. Add the initial description to its 'descriptions' subcollection
         initial_desc_data = {
-            "description": initial_description_text,
+            "description_text": initial_description_text,
             "is_initial": True,
             "createdAt": firestore.SERVER_TIMESTAMP,
             "user_id": user_id,
@@ -163,7 +163,7 @@ def create_word_for_user(
 
         # 4. Add the initial example to its 'examples' subcollection
         initial_ex_data = {
-            "example": initial_example_text,
+            "example_text": initial_example_text,
             "is_initial": True,
             "createdAt": firestore.SERVER_TIMESTAMP,
             "user_id": user_id,
@@ -184,8 +184,8 @@ def create_word_for_user(
         # 6. Prepare the response data with actual timestamps
         response_data = {
             "word_id": created_word_id,
-            "word": word_text_to_add,
-            "stars": 0,
+            "word_text": word_text_to_add,
+            "word_stars": 0,
             "user_id": user_id,
             "createdAt": created_word_data.get("createdAt"),
             "updatedAt": created_word_data.get("updatedAt"),
@@ -254,7 +254,7 @@ def edit_word_for_user(db, user_id: str, word_id: str, new_word_text: str) -> di
 
         # # Check if the new text is actually different from the old one (optional, but good UX)
         # # This prevents an unnecessary DB write if the text is the same.
-        # if old_word_data.get("word") == new_word_text:
+        # if old_word_data.get("word_text") == new_word_text:
         #     return {
         #         "message": f"Word text for ID '{word_id}' is already '{new_word_text}'. No update performed.",
         #         "word_id": word_id,
@@ -271,13 +271,13 @@ def edit_word_for_user(db, user_id: str, word_id: str, new_word_text: str) -> di
         new_word_data = _get_and_verify_word_ownership(
             db, user_id, word_id, fetch_subcollections=True
         )
-        # Note: old_word_data['word'] would still have the old text.
-        # new_word_data_with_id['word'] will have the new_word_text.
+        # Note: old_word_data['word_text'] would still have the old text.
+        # new_word_data_with_id['word_text'] will have the new_word_text.
         print(
-            f"WordService: Word ID '{word_id}' text updated from '{old_word_data.get('word')}' to '{new_word_data.get('word')}' for user '{user_id}'."
+            f"WordService: Word ID '{word_id}' text updated from '{old_word_data.get('word_text')}' to '{new_word_data.get('word_text')}' for user '{user_id}'."
         )
         return {
-            "message": f"Word '{old_word_data.get('word', word_id)}' successfully updated to '{new_word_data.get('word')}'.",
+            "message": f"Word '{old_word_data.get('word_text', word_id)}' successfully updated to '{new_word_data.get('word_text')}'.",
             "word_id": word_id,
             "updated_word_details": new_word_data,
         }
@@ -312,11 +312,11 @@ def delete_word_for_user(db, user_id: str, word_id: str) -> dict:
 
         wd.delete_word_by_id(db, word_id)
         print(
-            f"WordService: Word ID '{word_id}' (text: '{word_to_delete_data['word']}') deleted for user '{user_id}'."
+            f"WordService: Word ID '{word_id}' (text: '{word_to_delete_data['word_text']}') deleted for user '{user_id}'."
         )
 
         return {
-            "message": f"Word '{word_to_delete_data['word']}' deleted successfully.",
+            "message": f"Word '{word_to_delete_data['word_text']}' deleted successfully.",
             "word_id": word_id,
         }
     except NotFoundError:
@@ -387,7 +387,7 @@ def add_description_for_user(
         _ = _get_and_verify_word_ownership(db, user_id, word_id)
         # If this check passes then we can add the description.
         description_data = {
-            "description": description_text,
+            "description_text": description_text,
             "word_id": word_id,
             "is_initial": initial_description,
             "createdAt": firestore.SERVER_TIMESTAMP,
@@ -439,7 +439,7 @@ def add_example_for_user(
         _ = _get_and_verify_word_ownership(db, user_id, word_id)
         # If this check passes then we can add the example.
         example_data = {
-            "example": example_text,
+            "example_text": example_text,
             "word_id": word_id,
             "is_initial": initial_example,
             "createdAt": firestore.SERVER_TIMESTAMP,
