@@ -177,12 +177,18 @@ def create_word_for_user(
             initial_example_data_for_response = initial_example_doc.to_dict()
             initial_example_data_for_response["example_id"] = initial_example_doc.id
 
-        # 5. Prepare the response data
+        # 5. Fetch the newly created word document to get actual timestamp values
+        created_word_doc = new_word_ref.get()
+        created_word_data = created_word_doc.to_dict()
+
+        # 6. Prepare the response data with actual timestamps
         response_data = {
             "word_id": created_word_id,
             "word": word_text_to_add,
             "stars": 0,
             "user_id": user_id,
+            "createdAt": created_word_data.get("createdAt"),
+            "updatedAt": created_word_data.get("updatedAt"),
             "descriptions": (
                 [initial_description_data_for_response]
                 if initial_description_data_for_response
