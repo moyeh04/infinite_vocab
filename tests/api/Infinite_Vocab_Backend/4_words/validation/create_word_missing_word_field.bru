@@ -17,8 +17,8 @@ headers {
 
 body:json {
   {
-    "description": "Valid description",
-    "example": "Valid example"
+    "descriptionText": "Valid description",
+    "exampleText": "Valid example"
   }
 }
 
@@ -31,7 +31,7 @@ tests {
     expect(res.body).to.have.property('error');
   });
 
-  test("Error message mentions word field", function() {
-    expect(res.body.error.toLowerCase()).to.match(/(word|missing)/);
+  test("Error message mentions wordText field", function() {
+    expect(res.body.error.toLowerCase()).to.match(/(wordtext|missing)/);
   });
 }

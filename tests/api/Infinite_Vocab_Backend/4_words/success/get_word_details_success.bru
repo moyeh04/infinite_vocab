@@ -22,7 +22,7 @@ tests {
   test("Response has camelCase fields", function() {
     expect(res.body).to.have.property('wordId');
     expect(res.body).to.have.property('userId');
-    expect(res.body).to.have.property('word');
+    expect(res.body).to.have.property('wordText');
     expect(res.body).to.have.property('createdAt');
     expect(res.body).to.have.property('updatedAt');
   });

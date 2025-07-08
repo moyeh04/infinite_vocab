@@ -28,7 +28,7 @@ tests {
       const word = res.body[0];
       expect(word).to.have.property('wordId');
       expect(word).to.have.property('userId');
-      expect(word).to.have.property('word');
+      expect(word).to.have.property('wordText');
       expect(word).to.have.property('createdAt');
       expect(word).to.have.property('updatedAt');
       expect(word).to.have.property('descriptions');

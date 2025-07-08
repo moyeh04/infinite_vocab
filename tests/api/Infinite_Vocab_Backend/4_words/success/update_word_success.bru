@@ -17,7 +17,7 @@ headers {
 
 body:json {
   {
-    "word": "innovative - updated"
+    "wordText": "innovative - updated"
   }
 }
 
@@ -37,8 +37,8 @@ tests {
   });
 
   test("Updated word details present", function() {
-    expect(res.body.updatedWordDetails).to.have.property('word');
-    expect(res.body.updatedWordDetails.word).to.equal('innovative - updated');
+    expect(res.body.updatedWordDetails).to.have.property('wordText');
+    expect(res.body.updatedWordDetails.wordText).to.equal('innovative - updated');
     expect(res.body.updatedWordDetails).to.have.property('createdAt');
     expect(res.body.updatedWordDetails).to.have.property('updatedAt');
   });

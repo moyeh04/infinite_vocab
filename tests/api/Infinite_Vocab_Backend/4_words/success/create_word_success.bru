@@ -17,9 +17,9 @@ headers {
 
 body:json {
   {
-    "word": "innovative",
-    "description": "Introducing new ideas; original and creative in thinking",
-    "example": "The company's innovative approach to sustainability impressed investors"
+    "wordText": "innovative",
+    "descriptionText": "Introducing new ideas; original and creative in thinking",
+    "exampleText": "The company's innovative approach to sustainability impressed investors"
   }
 }
 
@@ -31,8 +31,8 @@ tests {
   test("Response has camelCase fields", function() {
     expect(res.body).to.have.property('wordId');
     expect(res.body).to.have.property('userId');
-    expect(res.body).to.have.property('word');
-    expect(res.body).to.have.property('stars');
+    expect(res.body).to.have.property('wordText');
+    expect(res.body).to.have.property('wordStars');
     expect(res.body).to.have.property('createdAt');
     expect(res.body).to.have.property('updatedAt');
   });
@@ -47,7 +47,7 @@ tests {
   });
 
   test("Word text matches request", function() {
-    expect(res.body.word).to.equal('innovative');
+    expect(res.body.wordText).to.equal('innovative');
   });
 }
 

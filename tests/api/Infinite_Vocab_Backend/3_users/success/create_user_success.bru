@@ -17,7 +17,7 @@ headers {
 
 body:json {
   {
-    "name": "Test User"
+    "userName": "Test User"
   }
 }
 
@@ -37,6 +37,6 @@ tests {
   });
 
   test("User name matches request", function() {
-    expect(res.body.name).to.equal('Test User');
+    expect(res.body.userName).to.equal('Test User');
   });
 }

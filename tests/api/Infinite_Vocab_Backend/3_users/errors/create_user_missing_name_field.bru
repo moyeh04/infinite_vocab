@@ -30,7 +30,7 @@ tests {
     expect(res.body).to.have.property('error');
   });
 
-  test("Error message mentions name field", function() {
-    expect(res.body.error.toLowerCase()).to.match(/(name|missing)/);
+  test("Error message mentions userName field", function() {
+    expect(res.body.error.toLowerCase()).to.match(/(username|missing)/);
   });
 }
