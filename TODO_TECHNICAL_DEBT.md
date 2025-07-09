@@ -19,6 +19,11 @@
 - [ ] **Exception Hierarchy**: Review and optimize custom exception usage
 - [ ] **Performance Metrics**: Add performance metrics to logging
 
+## Future Features (Enhancement Backlog)
+- [ ] **Category Descriptions**: Add optional description field to categories for better organization
+- [ ] **Category Custom Ordering**: Allow users to set custom display order for categories
+- [ ] **Category Alphabetical Sort**: Implement default alphabetical sorting for categories
+
 ## Code Locations to Address
 - `services/word_service.py`: Lines with `except WordServiceError: raise`
 - `routes/user_routes.py`: Function naming consistency
