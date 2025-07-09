@@ -240,7 +240,7 @@ def check_word_exists(db, user_id: str, word_text: str) -> dict:
         ) from e
 
 
-def edit_word_for_user(db, user_id: str, word_id: str, new_word_text: str) -> dict:
+def update_word_for_user(db, user_id: str, word_id: str, new_word_text: str) -> dict:
     """
     Updates the text of an existing word after verifying ownership.
     Returns a dictionary with a success message and the word_id.
@@ -261,11 +261,11 @@ def edit_word_for_user(db, user_id: str, word_id: str, new_word_text: str) -> di
         #         "updated_word_details": old_word_data # Return the existing data
         #     }
 
-        wd.edit_word_by_id(db, word_id, new_word_text)
+        wd.update_word_by_id(db, word_id, new_word_text)
 
         # To return the *updated* word, we should fetch it again AFTER the update.
         # The 'old_word_data' is from before the update.
-        # The DAL's edit_word_by_id doesn't return the updated document.
+        # The DAL's update_word_by_id doesn't return the updated document.
         # So, let's call the helper again to get the fresh data.
 
         new_word_data = _get_and_verify_word_ownership(
@@ -419,6 +419,224 @@ def add_description_for_user(
         )
         raise WordServiceError(
             "An unexpected service error occurred while adding description."
+        ) from e
+
+
+def update_description_for_user(
+    db, user_id: str, word_id: str, description_id: str, description_text: str
+):
+    """
+    Updates a description of an existing word, after verifying ownership.
+    Returns details including the description ID and updated message.
+    Raises NotFoundError if word or description not found/owned, or WordServiceError for other issues.
+    """
+    try:
+        # First verify word ownership
+        _ = _get_and_verify_word_ownership(db, user_id, word_id)
+
+        # Check if description exists and belongs to this word/user
+        description_snapshot = wd.get_description_by_id(db, word_id, description_id)
+        if not description_snapshot.exists:
+            raise NotFoundError(
+                f"Description with ID '{description_id}' not found in word '{word_id}'."
+            )
+
+        old_description_data = description_snapshot.to_dict()
+        if old_description_data.get("user_id") != user_id:
+            raise NotFoundError(
+                f"Description with ID '{description_id}' not found or not accessible."
+            )
+
+        old_description_text = old_description_data.get(
+            "description_text", description_id
+        )
+
+        # Update the description
+        wd.update_description_to_word_db(db, word_id, description_id, description_text)
+
+        print(
+            f"WordService: Description ID '{description_id}' text updated from '{old_description_text}' to '{description_text}' for user '{user_id}'"
+        )
+        return {
+            "message": f"Description '{old_description_text}' successfully updated to '{description_text}'.",
+            "word_id": word_id,
+            "description_id": description_id,
+        }
+    except NotFoundError:
+        raise
+    except DatabaseError as de:
+        print(
+            f"WordService: DatabaseError updating description '{description_id}' in word '{word_id}': {str(de)}"
+        )
+        raise WordServiceError(
+            "Could not update description due to a data access issue."
+        ) from de
+    except Exception as e:
+        print(
+            f"WordService: Unexpected error updating description '{description_id}' in word '{word_id}': {str(e)}"
+        )
+        raise WordServiceError(
+            "An unexpected service error occurred while updating description."
+        ) from e
+
+
+def delete_description_for_user(db, user_id: str, word_id: str, description_id: str):
+    """
+    Deletes a description from an existing word, after verifying ownership.
+    Returns a success message dictionary.
+    Raises NotFoundError if word or description not found/owned, or WordServiceError for other issues.
+    """
+    try:
+        # First verify word ownership
+        _ = _get_and_verify_word_ownership(db, user_id, word_id)
+
+        # Check if description exists and belongs to this word/user
+        description_snapshot = wd.get_description_by_id(db, word_id, description_id)
+        if not description_snapshot.exists:
+            raise NotFoundError(
+                f"Description with ID '{description_id}' not found in word '{word_id}'."
+            )
+
+        description_data = description_snapshot.to_dict()
+        if description_data.get("user_id") != user_id:
+            raise NotFoundError(
+                f"Description with ID '{description_id}' not found or not accessible."
+            )
+
+        # Delete the description
+        wd.delete_description_from_word_db(db, word_id, description_id)
+
+        print(
+            f"WordService: Description ID '{description_id}' deleted from word '{word_id}' for user '{user_id}'"
+        )
+        return {
+            "message": f"Description deleted successfully from word '{word_id}'.",
+            "word_id": word_id,
+            "description_id": description_id,
+        }
+    except NotFoundError:
+        raise
+    except DatabaseError as de:
+        print(
+            f"WordService: DatabaseError deleting description '{description_id}' from word '{word_id}': {str(de)}"
+        )
+        raise WordServiceError(
+            "Could not delete description due to a data access issue."
+        ) from de
+    except Exception as e:
+        print(
+            f"WordService: Unexpected error deleting description '{description_id}' from word '{word_id}': {str(e)}"
+        )
+        raise WordServiceError(
+            "An unexpected service error occurred while deleting description."
+        ) from e
+
+
+def update_example_for_user(
+    db, user_id: str, word_id: str, example_id: str, example_text: str
+):
+    """
+    Updates an example of an existing word, after verifying ownership.
+    Returns details including the example ID and updated message.
+    Raises NotFoundError if word or example not found/owned, or WordServiceError for other issues.
+    """
+    try:
+        # First verify word ownership
+        _ = _get_and_verify_word_ownership(db, user_id, word_id)
+
+        # Check if example exists and belongs to this word/user
+        example_snapshot = wd.get_example_by_id(db, word_id, example_id)
+        if not example_snapshot.exists:
+            raise NotFoundError(
+                f"Example with ID '{example_id}' not found in word '{word_id}'."
+            )
+
+        old_example_data = example_snapshot.to_dict()
+        if old_example_data.get("user_id") != user_id:
+            raise NotFoundError(
+                f"Example with ID '{example_id}' not found or not accessible."
+            )
+
+        old_example_text = old_example_data.get("example_text", example_id)
+
+        # Update the example
+        wd.update_example_to_word_db(db, word_id, example_id, example_text)
+
+        print(
+            f"WordService: Example ID '{example_id}' text updated from '{old_example_text}' to '{example_text}' for user '{user_id}'"
+        )
+        return {
+            "message": f"Example '{old_example_text}' successfully updated to '{example_text}'.",
+            "word_id": word_id,
+            "example_id": example_id,
+        }
+    except NotFoundError:
+        raise
+    except DatabaseError as de:
+        print(
+            f"WordService: DatabaseError updating example '{example_id}' in word '{word_id}': {str(de)}"
+        )
+        raise WordServiceError(
+            "Could not update example due to a data access issue."
+        ) from de
+    except Exception as e:
+        print(
+            f"WordService: Unexpected error updating example '{example_id}' in word '{word_id}': {str(e)}"
+        )
+        raise WordServiceError(
+            "An unexpected service error occurred while updating example."
+        ) from e
+
+
+def delete_example_for_user(db, user_id: str, word_id: str, example_id: str):
+    """
+    Deletes an example from an existing word, after verifying ownership.
+    Returns a success message dictionary.
+    Raises NotFoundError if word or example not found/owned, or WordServiceError for other issues.
+    """
+    try:
+        # First verify word ownership
+        _ = _get_and_verify_word_ownership(db, user_id, word_id)
+
+        # Check if example exists and belongs to this word/user
+        example_snapshot = wd.get_example_by_id(db, word_id, example_id)
+        if not example_snapshot.exists:
+            raise NotFoundError(
+                f"Example with ID '{example_id}' not found in word '{word_id}'."
+            )
+
+        example_data = example_snapshot.to_dict()
+        if example_data.get("user_id") != user_id:
+            raise NotFoundError(
+                f"Example with ID '{example_id}' not found or not accessible."
+            )
+
+        # Delete the example
+        wd.delete_example_from_word_db(db, word_id, example_id)
+
+        print(
+            f"WordService: Example ID '{example_id}' deleted from word '{word_id}' for user '{user_id}'"
+        )
+        return {
+            "message": f"Example deleted successfully from word '{word_id}'.",
+            "word_id": word_id,
+            "example_id": example_id,
+        }
+    except NotFoundError:
+        raise
+    except DatabaseError as de:
+        print(
+            f"WordService: DatabaseError deleting example '{example_id}' from word '{word_id}': {str(de)}"
+        )
+        raise WordServiceError(
+            "Could not delete example due to a data access issue."
+        ) from de
+    except Exception as e:
+        print(
+            f"WordService: Unexpected error deleting example '{example_id}' from word '{word_id}': {str(e)}"
+        )
+        raise WordServiceError(
+            "An unexpected service error occurred while deleting example."
         ) from e
 
 

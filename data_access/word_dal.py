@@ -67,7 +67,7 @@ def get_word_by_id(db, word_id):
         ) from e
 
 
-def edit_word_by_id(db, word_id, new_word_text):
+def update_word_by_id(db, word_id, new_word_text):
     """
     Updates the 'word_text' and 'updatedAt' timestamp for a specific word document.
     Returns True on success. Raises DatabaseError on failure.
@@ -151,6 +151,160 @@ def append_description_to_word_db(db, word_id: str, description_data: dict):
         print(f"DAL_ERROR: Failed to append description to word '{word_id}': {str(e)}")
         raise DatabaseError(
             f"DAL: Could not add description for word '{word_id}' due to Firestore error."
+        ) from e
+
+
+def update_description_to_word_db(
+    db, word_id: str, description_id: str, description_text: str
+):
+    """Updates the description text and updatedAt timestamp for a specific description document."""
+    try:
+        description_ref = (
+            db.collection("words")
+            .document(word_id)
+            .collection("descriptions")
+            .document(description_id)
+        )
+        data_to_update = {
+            "description_text": description_text,
+            "updatedAt": firestore.SERVER_TIMESTAMP,
+        }
+        description_ref.update(data_to_update)
+        print(
+            f"DAL: Updated description text for ID '{description_id}' in word '{word_id}' to '{description_text}'"
+        )
+        return True
+    except Exception as e:
+        print(
+            f"DAL_ERROR: Error updating description text for ID '{description_id}' in word '{word_id}': {str(e)}"
+        )
+        raise DatabaseError(
+            f"DAL: Firestore error updating description text for ID '{description_id}' in word '{word_id}': {str(e)}"
+        ) from e
+
+
+def delete_description_from_word_db(db, word_id: str, description_id: str):
+    """
+    Deletes a description document from a word's descriptions subcollection.
+    Returns True on success. Raises DatabaseError on failure.
+    """
+    try:
+        description_ref = (
+            db.collection("words")
+            .document(word_id)
+            .collection("descriptions")
+            .document(description_id)
+        )
+        description_ref.delete()
+        print(
+            f"DAL: Successfully deleted description with ID '{description_id}' from word '{word_id}'"
+        )
+        return True
+    except Exception as e:
+        print(
+            f"DAL_ERROR: Error deleting description ID '{description_id}' from word '{word_id}': {str(e)}"
+        )
+        raise DatabaseError(
+            f"DAL: Firestore error deleting description ID '{description_id}' from word '{word_id}': {str(e)}"
+        ) from e
+
+
+def get_description_by_id(db, word_id: str, description_id: str):
+    """Fetches a single description document from a word's descriptions subcollection by its ID."""
+    try:
+        print(
+            f"DAL: Attempting to fetch description by ID: '{description_id}' from word '{word_id}'"
+        )
+        description_ref = (
+            db.collection("words")
+            .document(word_id)
+            .collection("descriptions")
+            .document(description_id)
+        )
+        snapshot = description_ref.get()
+        return snapshot
+    except Exception as e:
+        print(
+            f"DAL_ERROR: Error fetching description by ID '{description_id}' from word '{word_id}': {str(e)}"
+        )
+        raise DatabaseError(
+            f"DAL: Firestore error fetching description by ID '{description_id}' from word '{word_id}': {str(e)}"
+        ) from e
+
+
+def update_example_to_word_db(db, word_id: str, example_id: str, example_text: str):
+    """Updates the example text and updatedAt timestamp for a specific example document."""
+    try:
+        example_ref = (
+            db.collection("words")
+            .document(word_id)
+            .collection("examples")
+            .document(example_id)
+        )
+        data_to_update = {
+            "example_text": example_text,
+            "updatedAt": firestore.SERVER_TIMESTAMP,
+        }
+        example_ref.update(data_to_update)
+        print(
+            f"DAL: Updated example text for ID '{example_id}' in word '{word_id}' to '{example_text}'"
+        )
+        return True
+    except Exception as e:
+        print(
+            f"DAL_ERROR: Error updating example text for ID '{example_id}' in word '{word_id}': {str(e)}"
+        )
+        raise DatabaseError(
+            f"DAL: Firestore error updating example text for ID '{example_id}' in word '{word_id}': {str(e)}"
+        ) from e
+
+
+def delete_example_from_word_db(db, word_id: str, example_id: str):
+    """
+    Deletes an example document from a word's examples subcollection.
+    Returns True on success. Raises DatabaseError on failure.
+    """
+    try:
+        example_ref = (
+            db.collection("words")
+            .document(word_id)
+            .collection("examples")
+            .document(example_id)
+        )
+        example_ref.delete()
+        print(
+            f"DAL: Successfully deleted example with ID '{example_id}' from word '{word_id}'"
+        )
+        return True
+    except Exception as e:
+        print(
+            f"DAL_ERROR: Error deleting example ID '{example_id}' from word '{word_id}': {str(e)}"
+        )
+        raise DatabaseError(
+            f"DAL: Firestore error deleting example ID '{example_id}' from word '{word_id}': {str(e)}"
+        ) from e
+
+
+def get_example_by_id(db, word_id: str, example_id: str):
+    """Fetches a single example document from a word's examples subcollection by its ID."""
+    try:
+        print(
+            f"DAL: Attempting to fetch example by ID: '{example_id}' from word '{word_id}'"
+        )
+        example_ref = (
+            db.collection("words")
+            .document(word_id)
+            .collection("examples")
+            .document(example_id)
+        )
+        snapshot = example_ref.get()
+        return snapshot
+    except Exception as e:
+        print(
+            f"DAL_ERROR: Error fetching example by ID '{example_id}' from word '{word_id}': {str(e)}"
+        )
+        raise DatabaseError(
+            f"DAL: Firestore error fetching example by ID '{example_id}' from word '{word_id}': {str(e)}"
         ) from e
 
 

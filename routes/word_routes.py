@@ -169,20 +169,20 @@ def update_word(word_id: str):
         word_text = word_text.strip()
 
         print(f"Input validation passed. Word to rename: {word_text}")
-        success_data = ws.edit_word_for_user(g.db, g.user_id, word_id, word_text)
+        success_data = ws.update_word_for_user(g.db, g.user_id, word_id, word_text)
         return camelized_response(success_data, 200)
     except NotFoundError as e:
         print(f"ROUTE: Word not found - {str(e)}")
         return error_response(str(e), e.status_code)
     except ForbiddenError as e:
-        print(f"ROUTE: Forbidden to edit word - {str(e)}")
+        print(f"ROUTE: Forbidden to update word - {str(e)}")
         return error_response(str(e), e.status_code)
     except WordServiceError as e:
         print(f"ROUTE: WordServiceError - {str(e)}")
         return error_response(e.message, e.status_code, e.context)
     except Exception as e:
         print(
-            f"ROUTE: Unexpected error in edit_word_for_user for word_id {word_id}: {str(e)}"
+            f"ROUTE: Unexpected error in update_word_for_user for word_id {word_id}: {str(e)}"
         )
         return error_response("An unexpected server error occurred", 500)
 
@@ -261,6 +261,138 @@ def add_description_to_word(word_id: str):
     except Exception as e:
         print(
             f"ROUTE: Unexpected error in add_description_for_user for word_id {word_id}: {str(e)}"
+        )
+        return error_response("An unexpected server error occurred", 500)
+
+
+@words_bp.route("/<word_id>/descriptions/<description_id>", methods=["PATCH"])
+def update_description_in_word(word_id: str, description_id: str):
+    try:
+        request_data = request.get_json()
+        if not request_data:
+            return error_response("Missing or invalid JSON request body", 400)
+
+        # Convert camelCase from frontend to snake_case for Python
+        request_data = decamelized_request(request_data)
+
+        description_text = request_data.get("description_text")
+        if not description_text or not description_text.strip():
+            return error_response(
+                "Missing or empty 'descriptionText' field in JSON body", 400
+            )
+        description_text = description_text.strip()
+
+        success_data = ws.update_description_for_user(
+            g.db, g.user_id, word_id, description_id, description_text
+        )
+        return camelized_response(success_data, 200)
+    except NotFoundError as e:
+        print(f"ROUTE: Description not found - {str(e)}")
+        return error_response(str(e), e.status_code)
+    except ForbiddenError as e:
+        print(f"ROUTE: Forbidden to update description - {str(e)}")
+        return error_response(str(e), e.status_code)
+    except WordServiceError as e:
+        print(f"ROUTE: WordServiceError - {str(e)}")
+        return error_response(e.message, e.status_code, e.context)
+    except Exception as e:
+        print(
+            f"ROUTE: Unexpected error in update_description_for_user for word_id {word_id}, description_id {description_id}: {str(e)}"
+        )
+        return error_response("An unexpected server error occurred", 500)
+
+
+@words_bp.route("/<word_id>/descriptions/<description_id>", methods=["DELETE"])
+def delete_description_from_word(word_id: str, description_id: str):
+    try:
+        print(
+            f"[DELETE /{word_id}/descriptions/{description_id}] User {g.user_id} - Deleting description..."
+        )
+        success_data = ws.delete_description_for_user(
+            g.db, g.user_id, word_id, description_id
+        )
+        print(
+            f"[DELETE /{word_id}/descriptions/{description_id}] User {g.user_id} - Successfully deleted description."
+        )
+        return camelized_response(success_data, 200)
+    except NotFoundError as e:
+        print(
+            f"[DELETE /{word_id}/descriptions/{description_id}] User {g.user_id} - Description not found: {str(e)}"
+        )
+        return error_response(str(e), e.status_code)
+    except WordServiceError as e:
+        print(
+            f"[DELETE /{word_id}/descriptions/{description_id}] User {g.user_id} - Service error: {e.message} | Context: {e.context}"
+        )
+        return error_response(e.message, e.status_code, e.context)
+    except Exception as e:
+        print(
+            f"[DELETE /{word_id}/descriptions/{description_id}] User {g.user_id} - Unexpected error: {str(e)}"
+        )
+        return error_response("An unexpected server error occurred", 500)
+
+
+@words_bp.route("/<word_id>/examples/<example_id>", methods=["PATCH"])
+def update_example_in_word(word_id: str, example_id: str):
+    try:
+        request_data = request.get_json()
+        if not request_data:
+            return error_response("Missing or invalid JSON request body", 400)
+
+        # Convert camelCase from frontend to snake_case for Python
+        request_data = decamelized_request(request_data)
+
+        example_text = request_data.get("example_text")
+        if not example_text or not example_text.strip():
+            return error_response(
+                "Missing or empty 'exampleText' field in JSON body", 400
+            )
+        example_text = example_text.strip()
+
+        success_data = ws.update_example_for_user(
+            g.db, g.user_id, word_id, example_id, example_text
+        )
+        return camelized_response(success_data, 200)
+    except NotFoundError as e:
+        print(f"ROUTE: Example not found - {str(e)}")
+        return error_response(str(e), e.status_code)
+    except ForbiddenError as e:
+        print(f"ROUTE: Forbidden to update example - {str(e)}")
+        return error_response(str(e), e.status_code)
+    except WordServiceError as e:
+        print(f"ROUTE: WordServiceError - {str(e)}")
+        return error_response(e.message, e.status_code, e.context)
+    except Exception as e:
+        print(
+            f"ROUTE: Unexpected error in update_example_for_user for word_id {word_id}, example_id {example_id}: {str(e)}"
+        )
+        return error_response("An unexpected server error occurred", 500)
+
+
+@words_bp.route("/<word_id>/examples/<example_id>", methods=["DELETE"])
+def delete_example_from_word(word_id: str, example_id: str):
+    try:
+        print(
+            f"[DELETE /{word_id}/examples/{example_id}] User {g.user_id} - Deleting example..."
+        )
+        success_data = ws.delete_example_for_user(g.db, g.user_id, word_id, example_id)
+        print(
+            f"[DELETE /{word_id}/examples/{example_id}] User {g.user_id} - Successfully deleted example."
+        )
+        return camelized_response(success_data, 200)
+    except NotFoundError as e:
+        print(
+            f"[DELETE /{word_id}/examples/{example_id}] User {g.user_id} - Example not found: {str(e)}"
+        )
+        return error_response(str(e), e.status_code)
+    except WordServiceError as e:
+        print(
+            f"[DELETE /{word_id}/examples/{example_id}] User {g.user_id} - Service error: {e.message} | Context: {e.context}"
+        )
+        return error_response(e.message, e.status_code, e.context)
+    except Exception as e:
+        print(
+            f"[DELETE /{word_id}/examples/{example_id}] User {g.user_id} - Unexpected error: {str(e)}"
         )
         return error_response("An unexpected server error occurred", 500)
 
