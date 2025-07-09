@@ -1,0 +1,35 @@
+meta {
+  name: update_description_no_auth
+  type: http
+  seq: 4
+}
+
+patch {
+  url: {{apiUrl}}/api/v1/words/dummy_word_id/descriptions/dummy_description_id
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "descriptionText": "This should fail due to no auth"
+  }
+}
+
+tests {
+  test("Status is 401", function() {
+    expect(res.status).to.equal(401);
+  });
+
+  test("Response has error field", function() {
+    expect(res.body).to.have.property('error');
+  });
+
+  test("Error message mentions authentication", function() {
+    expect(res.body.error.toLowerCase()).to.match(/(unauthorized|auth|token)/);
+  });
+}

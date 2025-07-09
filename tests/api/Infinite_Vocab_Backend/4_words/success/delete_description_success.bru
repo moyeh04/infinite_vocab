@@ -1,24 +1,17 @@
 meta {
-  name: add_description_success
+  name: delete_description_success
   type: http
-  seq: 6
+  seq: 11
 }
 
-post {
-  url: {{apiUrl}}/api/v1/words/{{wordId}}/descriptions
-  body: json
+delete {
+  url: {{apiUrl}}/api/v1/words/{{wordId}}/descriptions/{{descriptionId}}
+  body: none
   auth: none
 }
 
 headers {
   Authorization: Bearer {{idToken}}
-  Content-Type: application/json
-}
-
-body:json {
-  {
-    "descriptionText": "Featuring new methods; advanced and original"
-  }
 }
 
 tests {
@@ -34,14 +27,15 @@ tests {
 
   test("Success message present", function() {
     expect(res.body.message).to.contain('successfully');
+    expect(res.body.message).to.contain('deleted');
   });
 
   test("Description ID is present", function() {
     expect(res.body.descriptionId).to.be.a('string');
     expect(res.body.descriptionId.length).to.be.greaterThan(0);
   });
-}
 
-vars:post-response {
-  descriptionId: res.body.descriptionId
+  test("Word ID matches", function() {
+    expect(res.body.wordId).to.equal(bru.getVar("wordId"));
+  });
 }

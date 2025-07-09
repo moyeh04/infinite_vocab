@@ -1,0 +1,30 @@
+meta {
+  name: update_example_missing_body
+  type: http
+  seq: 16
+}
+
+patch {
+  url: {{apiUrl}}/api/v1/words/dummy_word_id/examples/dummy_example_id
+  body: none
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{idToken}}
+  Content-Type: application/json
+}
+
+tests {
+  test("Status is 400", function() {
+    expect(res.status).to.equal(400);
+  });
+
+  test("Response has error field", function() {
+    expect(res.body).to.have.property('error');
+  });
+
+  test("Error message mentions missing or invalid JSON", function() {
+    expect(res.body.error.toLowerCase()).to.match(/(missing|invalid|json|body)/);
+  });
+}

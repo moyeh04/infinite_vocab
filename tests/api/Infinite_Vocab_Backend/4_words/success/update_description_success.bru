@@ -1,11 +1,11 @@
 meta {
-  name: add_description_success
+  name: update_description_success
   type: http
-  seq: 6
+  seq: 9
 }
 
-post {
-  url: {{apiUrl}}/api/v1/words/{{wordId}}/descriptions
+patch {
+  url: {{apiUrl}}/api/v1/words/{{wordId}}/descriptions/{{descriptionId}}
   body: json
   auth: none
 }
@@ -17,7 +17,7 @@ headers {
 
 body:json {
   {
-    "descriptionText": "Featuring new methods; advanced and original"
+    "descriptionText": "Updated advanced and original methods description"
   }
 }
 
@@ -25,23 +25,24 @@ tests {
   test("Status is 200", function() {
     expect(res.status).to.equal(200);
   });
-
+  
   test("Response has camelCase fields", function() {
     expect(res.body).to.have.property('wordId');
     expect(res.body).to.have.property('descriptionId');
     expect(res.body).to.have.property('message');
   });
-
+  
   test("Success message present", function() {
     expect(res.body.message).to.contain('successfully');
+    expect(res.body.message).to.contain('updated');
   });
-
+  
   test("Description ID is present", function() {
     expect(res.body.descriptionId).to.be.a('string');
     expect(res.body.descriptionId.length).to.be.greaterThan(0);
   });
-}
-
-vars:post-response {
-  descriptionId: res.body.descriptionId
+  
+  test("Word ID matches", function() {
+    expect(res.body.wordId).to.equal(bru.getVar("wordId"));
+  });
 }

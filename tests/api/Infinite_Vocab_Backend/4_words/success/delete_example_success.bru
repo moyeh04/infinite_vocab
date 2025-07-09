@@ -1,24 +1,17 @@
 meta {
-  name: add_example_success
+  name: delete_example_success
   type: http
-  seq: 7
+  seq: 12
 }
 
-post {
-  url: {{apiUrl}}/api/v1/words/{{wordId}}/examples
-  body: json
+delete {
+  url: {{apiUrl}}/api/v1/words/{{wordId}}/examples/{{exampleId}}
+  body: none
   auth: none
 }
 
 headers {
   Authorization: Bearer {{idToken}}
-  Content-Type: application/json
-}
-
-body:json {
-  {
-    "exampleText": "Their innovative design revolutionized the entire industry"
-  }
 }
 
 tests {
@@ -34,14 +27,15 @@ tests {
 
   test("Success message present", function() {
     expect(res.body.message).to.contain('successfully');
+    expect(res.body.message).to.contain('deleted');
   });
 
   test("Example ID is present", function() {
     expect(res.body.exampleId).to.be.a('string');
     expect(res.body.exampleId.length).to.be.greaterThan(0);
   });
-}
 
-vars:post-response {
-  exampleId: res.body.exampleId
+  test("Word ID matches", function() {
+    expect(res.body.wordId).to.equal(bru.getVar("wordId"));
+  });
 }

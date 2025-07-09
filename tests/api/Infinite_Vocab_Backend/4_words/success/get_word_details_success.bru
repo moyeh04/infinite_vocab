@@ -6,6 +6,7 @@ meta {
 
 get {
   url: {{apiUrl}}/api/v1/words/{{wordId}}
+  body: none
   auth: none
 }
 
@@ -18,7 +19,7 @@ tests {
   test("Status is 200", function() {
     expect(res.status).to.equal(200);
   });
-
+  
   test("Response has camelCase fields", function() {
     expect(res.body).to.have.property('wordId');
     expect(res.body).to.have.property('userId');
@@ -26,7 +27,7 @@ tests {
     expect(res.body).to.have.property('createdAt');
     expect(res.body).to.have.property('updatedAt');
   });
-
+  
   test("Response includes descriptions and examples", function() {
     expect(res.body).to.have.property('descriptions');
     expect(res.body).to.have.property('examples');
