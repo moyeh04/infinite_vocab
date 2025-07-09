@@ -17,7 +17,7 @@ def authentication_before_request():
 
 
 @user_bp.route("/", methods=["POST"])
-def generate_user():
+def create_user():
     user_id = g.user_id
     try:
         request_data = request.get_json()
@@ -54,6 +54,6 @@ def generate_user():
         )
     except Exception as e:
         print(
-            f"Unexpected error in generate_user for user_id {user_id if 'user_id' in locals() else 'unknown'}: {str(e)}"
+            f"Unexpected error in create_user for user_id {user_id if 'user_id' in locals() else 'unknown'}: {str(e)}"
         )
         return error_response("An unexpected server error occurred", 500)
