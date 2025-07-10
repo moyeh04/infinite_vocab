@@ -1,0 +1,40 @@
+meta {
+  name: update_user_name_success
+  type: http
+  seq: 3
+}
+
+patch {
+  url: {{apiUrl}}/api/v1/users/me
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{idToken}}
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "userName": "Bruno Test User Updated"
+  }
+}
+
+tests {
+  test("Status is 200 OK", function() {
+    expect(res.status).to.equal(200);
+  });
+
+  test("User name was updated correctly", function() {
+    expect(res.body.userName).to.equal("Bruno Test User Updated");
+  });
+
+  test("Response includes an updatedAt field", function() {
+    expect(res.body).to.have.property('updatedAt');
+    expect(res.body.updatedAt).to.be.a('string');
+  });
+}

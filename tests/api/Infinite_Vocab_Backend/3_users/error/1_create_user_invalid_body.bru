@@ -1,0 +1,36 @@
+meta {
+  name: create_user_invalid_body
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{apiUrl}}/api/v1/users/
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{idToken}}
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "userName": ""
+  }
+}
+
+tests {
+  test("Status is 400 Bad Request", function() {
+    expect(res.status).to.equal(400);
+  });
+
+  test("Response contains a validation error message", function() {
+    expect(res.body).to.have.property('error');
+    expect(res.body.error.toLowerCase()).to.include('invalid input');
+  });
+}
