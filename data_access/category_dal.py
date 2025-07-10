@@ -2,6 +2,8 @@
 
 from typing import List, Optional
 
+from firebase_admin import firestore
+
 from models import Category
 from utils import DatabaseError
 
@@ -13,7 +15,7 @@ def create_category(db, category: Category) -> Category:
             "user_id": category.user_id,
             "category_name": category.category_name,
             "category_color": category.category_color,
-            "createdAt": db.SERVER_TIMESTAMP,
+            "createdAt": firestore.SERVER_TIMESTAMP,
         }
 
         # Firestore .add() returns (timestamp, doc_ref) tuple
@@ -52,6 +54,7 @@ def get_categories_by_user(db, user_id: str) -> List[Category]:
                 category_color=data["category_color"],
                 user_id=data["user_id"],
                 created_at=data.get("createdAt"),
+                updated_at=data.get("updatedAt"),
             )
             categories.append(category)
         return categories
@@ -73,6 +76,7 @@ def get_category_by_id(db, category_id: str) -> Optional[Category]:
             category_color=data["category_color"],
             user_id=data["user_id"],
             created_at=data.get("createdAt"),
+            updated_at=data.get("updatedAt"),
         )
     except Exception as e:
         raise DatabaseError(f"Failed to get category: {str(e)}")
@@ -87,7 +91,7 @@ def update_category(db, category_id: str, updates: dict) -> Optional[Category]:
         if not doc.exists:
             return None
 
-        updates["updatedAt"] = db.SERVER_TIMESTAMP
+        updates["updatedAt"] = firestore.SERVER_TIMESTAMP
         doc_ref.update(updates)
 
         updated_doc = doc_ref.get()

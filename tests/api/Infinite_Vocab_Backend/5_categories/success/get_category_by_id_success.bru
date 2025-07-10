@@ -1,0 +1,30 @@
+meta {
+  name: get_category_by_id_success
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{apiUrl}}/api/v1/categories/{{testCategoryId}}
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{idToken}}
+  Content-Type: application/json
+}
+
+tests {
+  test("Status is 200 (OK)", function() {
+    expect(res.status).to.equal(200);
+  });
+  test("Category has correct ID", function() {
+    expect(res.body.categoryId).to.equal(bru.getEnvVar("testCategoryId"));
+  });
+  test("Category has required properties", function() {
+    expect(res.body).to.have.property('categoryName');
+    expect(res.body).to.have.property('categoryColor');
+    expect(res.body).to.have.property('userId');
+    expect(res.body).to.have.property('createdAt');
+  });
+}

@@ -1,0 +1,26 @@
+meta {
+  name: get_category_not_found_error
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{apiUrl}}/api/v1/categories/nonexistent123
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{idToken}}
+  Content-Type: application/json
+}
+
+tests {
+  test("Status is 404 (Not Found)", function() {
+    expect(res.status).to.equal(404);
+  });
+
+  test("Error message indicates category not found", function() {
+    expect(res.body).to.have.property('error');
+    expect(res.body.error.toLowerCase()).to.include('not found');
+  });
+}

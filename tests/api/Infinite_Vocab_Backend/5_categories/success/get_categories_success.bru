@@ -1,0 +1,52 @@
+meta {
+  name: get_categories_success
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{apiUrl}}/api/v1/categories/
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{idToken}}
+  Content-Type: application/json
+}
+
+tests {
+  test("Status is 200 (OK)", function() {
+    expect(res.status).to.equal(200);
+  });
+
+  test("Response is an array", function() {
+    expect(res.body).to.be.an('array');
+  });
+
+  test("Categories have required properties", function() {
+    // Skip test if array is empty
+    if (res.body.length === 0) {
+      this.skip();
+      return;
+    }
+
+    const category = res.body[0];
+    expect(category).to.have.property('categoryId');
+    expect(category).to.have.property('categoryName');
+    expect(category).to.have.property('categoryColor');
+    expect(category).to.have.property('userId');
+    expect(category).to.have.property('createdAt');
+  });
+
+  test("Previously created category exists", function() {
+    // Skip test if no testCategoryId is set
+    if (!bru.getEnvVar("testCategoryId")) {
+      this.skip();
+      return;
+    }
+
+    const categoryId = bru.getEnvVar("testCategoryId");
+    const found = res.body.some(category => category.categoryId === categoryId);
+    expect(found).to.be.true;
+  });
+}

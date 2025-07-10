@@ -1,0 +1,40 @@
+meta {
+  name: update_category_success
+  type: http
+  seq: 4
+}
+
+put {
+  url: {{apiUrl}}/api/v1/categories/{{testCategoryId}}
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{idToken}}
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "categoryName": "Updated Bruno Category",
+    "categoryColor": "#4287f5"
+  }
+}
+
+tests {
+  test("Status is 200 (OK)", function() {
+    expect(res.status).to.equal(200);
+  });
+  test("Category has been updated", function() {
+    expect(res.body.categoryName).to.equal('Updated Bruno Category');
+    expect(res.body.categoryColor).to.equal('#4287f5');
+  });
+  test("Category has updatedAt timestamp", function() {
+    expect(res.body).to.have.property('updatedAt');
+    expect(res.body.updatedAt).to.not.be.null;
+  });
+  test("Original ID is preserved", function() {
+    expect(res.body.categoryId).to.equal(bru.getEnvVar("testCategoryId"));
+  });
+}

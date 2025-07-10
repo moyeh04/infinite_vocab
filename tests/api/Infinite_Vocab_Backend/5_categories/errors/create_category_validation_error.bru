@@ -1,0 +1,32 @@
+meta {
+  name: create_category_validation_error
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{apiUrl}}/api/v1/categories/
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{idToken}}
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "categoryName": "",
+    "categoryColor": "invalid-color"
+  }
+}
+
+tests {
+  test("Status is 400 or 422 (Validation Error)", function() {
+    expect([400, 422]).to.include(res.status);
+  });
+  test("Response contains error information", function() {
+    expect(res.body).to.have.property('error');
+  });
+}
