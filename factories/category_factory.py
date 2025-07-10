@@ -1,7 +1,7 @@
 """Category Factory - Business Logic for Category objects"""
 
 from models import Category
-from schemas import CategoryCreateSchema
+from schemas import CategoryCreateSchema, CategoryUpdateSchema
 from utils import ValidationError
 
 
@@ -19,6 +19,23 @@ class CategoryFactory:
             category_color=validated_color,
             user_id=user_id,
         )
+
+    @staticmethod
+    def create_update_dict(schema: CategoryUpdateSchema) -> dict:
+        """Create update dictionary from validated schema with business rules applied."""
+        updates = {}
+
+        if schema.category_name is not None:
+            updates["category_name"] = CategoryFactory._normalize_category_name(
+                schema.category_name
+            )
+
+        if schema.category_color is not None:
+            updates["category_color"] = CategoryFactory._validate_color_format(
+                schema.category_color
+            )
+
+        return updates
 
     @staticmethod
     def _normalize_category_name(name: str) -> str:

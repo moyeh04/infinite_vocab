@@ -66,3 +66,10 @@ class WordServiceError(ApplicationError):
 
     def __init__(self, message="A word service operation failed.", context=None):
         super().__init__(message, status_code=500, context=context)
+
+
+class CategoryServiceError(ApplicationError):
+    """Base exception for errors specific to the CategoryService."""
+
+    def __init__(self, message="A category service operation failed.", context=None):
+        super().__init__(message, status_code=500, context=context)

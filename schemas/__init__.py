@@ -1,5 +1,5 @@
 # Schemas package - Pydantic schemas for request validation
 
-from .category_schema import CategoryCreateSchema
+from .category_schema import CategoryCreateSchema, CategoryUpdateSchema
 
-__all__ = ["CategoryCreateSchema"]
+__all__ = ["CategoryCreateSchema", "CategoryUpdateSchema"]

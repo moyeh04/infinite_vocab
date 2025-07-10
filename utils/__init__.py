@@ -8,6 +8,7 @@ from .exceptions import (
     NotFoundError,
     ForbiddenError,
     WordServiceError,
+    CategoryServiceError,
 )
 from .response_helpers import (
     camelized_response,
@@ -24,6 +25,7 @@ __all__ = [
     "NotFoundError",
     "ForbiddenError",
     "WordServiceError",
+    "CategoryServiceError",
     "camelized_response",
     "decamelized_request",
     "error_response",

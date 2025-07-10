@@ -7,11 +7,11 @@ from pydantic import BaseModel, Field
 class Category(BaseModel):
     """Category data model for responses and internal operations"""
 
-    category_id: Optional[str] = Field(alias="categoryId")
+    category_id: Optional[str] = Field(alias="categoryId", default=None)
     user_id: str = Field(alias="userId")
     category_name: str = Field(alias="categoryName")
     category_color: str = Field(alias="categoryColor", default="#FFFFFF")
-    created_at: Optional[datetime] = Field(alias="createdAt")
+    created_at: Optional[datetime] = Field(alias="createdAt", default=None)
     updated_at: Optional[datetime] = Field(alias="updatedAt", default=None)
 
     class Config:
@@ -21,7 +21,7 @@ class Category(BaseModel):
         }
 
         # Allow both snake_case and camelCase field names
-        allow_population_by_field_name = True
+        validate_by_name = True
 
         # Example for API documentation (Response Example)
 
