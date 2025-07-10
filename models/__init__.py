@@ -2,6 +2,7 @@
 
 
 from .category_model import Category
+from .score_history_model import ScoreHistoryEntry
 from .search_models import (
     CategorySearchResult,
     SearchResults,
@@ -15,4 +16,5 @@ __all__ = [
     "CategorySearchResult",
     "SearchResults",
     "WordSearchResult",
+    "ScoreHistoryEntry",
 ]

@@ -1,10 +1,12 @@
 """User Service - business logic for user operations."""
 
 import logging
+from typing import List
 
+from data_access import score_history_dal as sh_dal
 from data_access import user_dal as u_dal
 from factories import UserFactory
-from models import User
+from models import ScoreHistoryEntry, User
 from schemas import UserCreateSchema, UserUpdateSchema
 from utils import DatabaseError, NotFoundError, UserServiceError, generate_random_code
 
@@ -79,3 +81,20 @@ def update_user_profile(db, user_id: str, schema: UserUpdateSchema) -> User:
     except (DatabaseError, NotFoundError) as e:
         logger.error(f"SERVICE: Error updating profile for user {user_id}: {e}")
         raise UserServiceError("Failed to update user profile.") from e
+
+
+def get_score_history_for_user(db, user_id: str) -> List[ScoreHistoryEntry]:
+    """Retrieves the score history for a specific user."""
+    logger.info(f"SERVICE: Getting score history for user {user_id}.")
+    try:
+        history_data = sh_dal.get_history_for_user(db, user_id)
+        # Convert the list of dictionaries from the DAL into a list of Pydantic models
+
+        return [ScoreHistoryEntry.model_validate(entry) for entry in history_data]
+    except DatabaseError as e:
+        logger.error(
+            f"SERVICE: DatabaseError getting score history for user {user_id}: {e}"
+        )
+        raise UserServiceError(
+            "A database error occurred while retrieving score history."
+        ) from e

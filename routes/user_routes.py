@@ -87,3 +87,17 @@ def update_my_profile_route():
             f"ROUTE: Service error updating profile for user_id {g.user_id}: {e}"
         )
         return jsonify({"error": str(e)}), 500
+
+
+@user_bp.route("/me/score-history", methods=["GET"])
+def get_my_score_history_route():
+    """Fetches the score history for the currently authenticated user."""
+    logger.info(f"ROUTE: get_my_score_history_route invoked for user_id: {g.user_id}")
+    try:
+        history = user_service.get_score_history_for_user(g.db, g.user_id)
+        return jsonify([entry.model_dump(by_alias=True) for entry in history]), 200
+    except UserServiceError as e:
+        logger.error(
+            f"ROUTE: Service error getting score history for user {g.user_id}: {e}"
+        )
+        return jsonify({"error": str(e)}), 500

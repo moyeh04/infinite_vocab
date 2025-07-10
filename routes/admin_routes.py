@@ -5,7 +5,7 @@ import logging
 from flask import Blueprint, g, jsonify, request
 
 from middleware import admin_required, firebase_token_required, super_admin_required
-from schemas import RoleUpdateSchema
+from schemas import RoleUpdateSchema, ScoreUpdateSchema
 from services import admin_service
 from utils import AdminServiceError, DuplicateEntryError, NotFoundError, ValidationError
 
@@ -187,4 +187,43 @@ def remove_student_route(student_id: str):
         logger.error(
             f"ROUTE: Service error for admin {g.user_id} removing student {student_id}: {e}"
         )
+        return jsonify({"error": str(e)}), 500
+
+
+@admin_bp.route("/users/find", methods=["GET"])
+@admin_required
+def find_user_by_code_route():
+    """Finds a user by their user_code."""
+    user_code = request.args.get("code", "").strip()
+    if not user_code:
+        return jsonify({"error": "Query parameter 'code' is required."}), 400
+
+    logger.info(f"ROUTE: Admin {g.user_id} is searching for user_code: {user_code}")
+    try:
+        user = admin_service.find_user_by_code(g.db, user_code)
+        if not user:
+            raise NotFoundError(f"User with code '{user_code}' not found.")
+        return jsonify(user.model_dump(by_alias=True)), 200
+    except NotFoundError as e:
+        return jsonify({"error": str(e)}), 404
+    except AdminServiceError as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@admin_bp.route("/students/<student_id>/score", methods=["POST"])
+@admin_required
+def add_score_route(student_id: str):
+    """Adds an assessment score to a student managed by the admin."""
+    logger.info(
+        f"ROUTE: Admin {g.user_id} attempting to add score to student {student_id}."
+    )
+    try:
+        schema = ScoreUpdateSchema(**request.get_json())
+        result = admin_service.add_assessment_score(g.db, g.user_id, student_id, schema)
+        return jsonify(result), 200
+    except (ValidationError, ValueError) as e:
+        return jsonify({"error": f"Invalid input: {e}"}), 400
+    except NotFoundError as e:
+        return jsonify({"error": str(e)}), 404
+    except AdminServiceError as e:
         return jsonify({"error": str(e)}), 500

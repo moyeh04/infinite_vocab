@@ -5,6 +5,7 @@ from . import (
     admin_dal,
     admin_student_dal,
     category_dal,
+    score_history_dal,
     search_dal,
     user_dal,
     word_category_dal,
@@ -19,4 +20,5 @@ __all__ = [
     "word_category_dal",
     "word_dal",
     "admin_student_dal",
+    "score_history_dal",
 ]

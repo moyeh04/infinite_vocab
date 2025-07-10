@@ -109,3 +109,22 @@ def list_all_users(db) -> list[User]:
     except Exception as e:
         logger.error(f"DAL: Failed to list all users: {e}")
         raise DatabaseError(f"Failed to list all users: {e}") from e
+
+
+def get_user_by_code(db, user_code: str) -> Optional[User]:
+    """Gets a user from Firestore by their unique user_code."""
+    logger.info(f"DAL: Getting user by user_code: {user_code}")
+    try:
+        query = db.collection("users").where("user_code", "==", user_code).limit(1)
+        docs = list(query.stream())
+        if not docs:
+            logger.warning(f"DAL: No user found with user_code: {user_code}")
+            return None
+
+        doc = docs[0]
+        db_data = doc.to_dict()
+        db_data["user_id"] = doc.id
+        return User.model_validate(db_data)
+    except Exception as e:
+        logger.error(f"DAL: Failed to get user by code {user_code}: {e}")
+        raise DatabaseError(f"Failed to get user by code: {e}") from e

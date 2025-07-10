@@ -1,13 +1,14 @@
 """Admin Service - business logic for admin-only operations."""
 
 import logging
-from typing import List
+from typing import List, Optional
 
 from data_access import admin_dal as a_dal
 from data_access import admin_student_dal as as_dal
+from data_access import score_history_dal as sh_dal
 from data_access import user_dal as u_dal
 from models import User
-from schemas import RoleUpdateSchema
+from schemas import RoleUpdateSchema, ScoreUpdateSchema
 from utils import AdminServiceError, DatabaseError, DuplicateEntryError, NotFoundError
 
 logger = logging.getLogger("infinite_vocab_app")
@@ -219,4 +220,67 @@ def list_students_for_admin(db, admin_id: str) -> List[User]:
         )
         raise AdminServiceError(
             "A database error occurred while listing students."
+        ) from e
+
+
+def find_user_by_code(db, user_code: str) -> Optional[User]:
+    """Finds a single user by their user_code."""
+    logger.info(f"SERVICE: Finding user by code: {user_code}")
+    try:
+        return u_dal.get_user_by_code(db, user_code)
+    except DatabaseError as e:
+        logger.error(f"SERVICE: DatabaseError finding user by code {user_code}: {e}")
+        raise AdminServiceError(
+            "A database error occurred while finding the user."
+        ) from e
+
+
+def add_assessment_score(db, admin_id: str, student_id: str, schema: ScoreUpdateSchema):
+    """Adds a score to a student, updates their total, and logs the history."""
+    logger.info(f"SERVICE: Admin {admin_id} adding score to student {student_id}.")
+    try:
+        # Rule 1: Verify the student exists and is assigned to this admin.
+        link = as_dal.get_link_by_student_id(db, student_id)
+        if not link or link.get("admin_id") != admin_id:
+            raise NotFoundError(
+                "This student is not assigned to you, or does not exist."
+            )
+
+        # Rule 2: Get the student's current score.
+        student = u_dal.get_user_by_id(db, student_id)
+        if not student:
+            raise NotFoundError(
+                f"Could not find student details for user ID: {student_id}"
+            )
+
+        # Rule 3: Calculate new score and perform the update.
+        new_total_score = student.total_score + schema.score_change
+        u_dal.update_user(db, student_id, {"total_score": new_total_score})
+
+        # Rule 4: Create the history log.
+        history_entry = {
+            "user_id": student_id,
+            "score_change": schema.score_change,
+            "new_total_score": new_total_score,
+            "reason": schema.reason,
+            "admin_id": admin_id,
+        }
+        sh_dal.create_score_history_entry(db, history_entry)
+
+        logger.info(
+            f"SERVICE: Successfully added {schema.score_change} to student {student_id}. New total: {new_total_score}."
+        )
+        return {
+            "message": "Score updated successfully.",
+            "newTotalScore": new_total_score,
+        }
+
+    except NotFoundError:
+        raise
+    except DatabaseError as e:
+        logger.error(
+            f"SERVICE: DatabaseError adding score to student {student_id}: {e}"
+        )
+        raise AdminServiceError(
+            "A database error occurred while adding the score."
         ) from e

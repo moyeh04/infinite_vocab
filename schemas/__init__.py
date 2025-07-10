@@ -2,6 +2,7 @@
 
 from .admin_schema import RoleUpdateSchema
 from .category_schema import CategoryCreateSchema, CategoryUpdateSchema
+from .score_update_schema import ScoreUpdateSchema
 from .user_schema import UserCreateSchema, UserUpdateSchema
 
 __all__ = [
@@ -10,4 +11,5 @@ __all__ = [
     "CategoryUpdateSchema",
     "UserCreateSchema",
     "UserUpdateSchema",
+    "ScoreUpdateSchema",
 ]
