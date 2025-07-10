@@ -101,3 +101,30 @@ def get_my_score_history_route():
             f"ROUTE: Service error getting score history for user {g.user_id}: {e}"
         )
         return jsonify({"error": str(e)}), 500
+
+
+@user_bp.route("/leaderboard", methods=["GET"])
+def get_leaderboard_route():
+    """Fetches the top users by score for the leaderboard."""
+    logger.info("ROUTE: get_leaderboard_route invoked.")
+
+    try:
+        # We can add a query param to control the limit in the future if needed
+
+        limit = request.args.get("limit", default=20, type=int)
+        leaderboard = user_service.get_leaderboard(g.db, limit)
+
+        # We only want to return specific fields for the leaderboard
+
+        leaderboard_data = [
+            {
+                "userName": user.user_name,
+                "userCode": user.user_code,
+                "totalScore": user.total_score,
+            }
+            for user in leaderboard
+        ]
+        return jsonify(leaderboard_data), 200
+    except UserServiceError as e:
+        logger.error(f"ROUTE: Service error getting leaderboard: {e}")
+        return jsonify({"error": str(e)}), 500

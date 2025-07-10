@@ -98,3 +98,15 @@ def get_score_history_for_user(db, user_id: str) -> List[ScoreHistoryEntry]:
         raise UserServiceError(
             "A database error occurred while retrieving score history."
         ) from e
+
+
+def get_leaderboard(db, limit: int = 20) -> List[User]:
+    """Retrieves the top users for the leaderboard."""
+    logger.info("SERVICE: get_leaderboard invoked.")
+    try:
+        return u_dal.get_users_for_leaderboard(db, limit)
+    except DatabaseError as e:
+        logger.error(f"SERVICE: DatabaseError getting leaderboard: {e}")
+        raise UserServiceError(
+            "A database error occurred while retrieving the leaderboard."
+        ) from e

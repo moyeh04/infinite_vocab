@@ -128,3 +128,26 @@ def get_user_by_code(db, user_code: str) -> Optional[User]:
     except Exception as e:
         logger.error(f"DAL: Failed to get user by code {user_code}: {e}")
         raise DatabaseError(f"Failed to get user by code: {e}") from e
+
+
+def get_users_for_leaderboard(db, limit: int = 20) -> list[User]:
+    """Retrieves a list of users sorted by total_score descending for the leaderboard."""
+    logger.info(f"DAL: Getting top {limit} users for leaderboard.")
+    try:
+        users = []
+        query = (
+            db.collection("users")
+            .order_by("total_score", direction="DESCENDING")
+            .limit(limit)
+        )
+        docs = query.stream()
+        for doc in docs:
+            db_data = doc.to_dict()
+            db_data["user_id"] = doc.id
+            users.append(User.model_validate(db_data))
+        logger.info(f"DAL: Retrieved {len(users)} users for leaderboard.")
+
+        return users
+    except Exception as e:
+        logger.error(f"DAL: Failed to list users for leaderboard: {e}")
+        raise DatabaseError(f"Failed to list users for leaderboard: {e}") from e
