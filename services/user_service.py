@@ -21,7 +21,7 @@ def get_or_create_user(db, user_id: str, schema: UserCreateSchema) -> tuple[User
         existing_user = u_dal.get_user_by_id(db, user_id)
         if existing_user:
             logger.info(f"SERVICE: Found existing user with ID '{user_id}'.")
-            # --- FIX STARTS HERE ---
+
             # If the user exists but is missing a code, generate and save one.
             if not existing_user.user_code:
                 logger.warning(
@@ -30,7 +30,7 @@ def get_or_create_user(db, user_id: str, schema: UserCreateSchema) -> tuple[User
                 new_code = generate_random_code()
                 updated_user = u_dal.update_user(db, user_id, {"user_code": new_code})
                 return updated_user, False  # Return updated user, was_created = False
-            # --- FIX ENDS HERE ---
+
             return existing_user, False  # Return original user, was_created = False
 
         logger.info(f"SERVICE: No user found for ID '{user_id}'. Creating new user.")
@@ -45,11 +45,13 @@ def get_or_create_user(db, user_id: str, schema: UserCreateSchema) -> tuple[User
 
 def get_user_profile(db, user_id: str) -> User:
     """Retrieves a user's profile by their ID."""
+
     logger.info(f"SERVICE: get_user_profile invoked for user_id: {user_id}.")
     try:
         user = u_dal.get_user_by_id(db, user_id)
         if not user:
             raise NotFoundError(f"User with ID '{user_id}' not found.")
+
         return user
     except DatabaseError as e:
         logger.error(f"SERVICE: DatabaseError in get_user_profile for {user_id}: {e}")
@@ -58,6 +60,7 @@ def get_user_profile(db, user_id: str) -> User:
 
 def update_user_profile(db, user_id: str, schema: UserUpdateSchema) -> User:
     """Updates a user's profile information."""
+
     logger.info(f"SERVICE: update_user_profile invoked for user_id: {user_id}.")
     try:
         updates = UserFactory.create_update_dict(schema)
@@ -72,7 +75,6 @@ def update_user_profile(db, user_id: str, schema: UserUpdateSchema) -> User:
             raise NotFoundError(f"User with ID '{user_id}' not found for update.")
 
         logger.info(f"SERVICE: Successfully updated profile for user {user_id}.")
-
         return updated_user
     except (DatabaseError, NotFoundError) as e:
         logger.error(f"SERVICE: Error updating profile for user {user_id}: {e}")
