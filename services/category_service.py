@@ -136,12 +136,9 @@ def update_category(
         # Use DAL to update and return updated category
         updated_category = category_dal.update_category(db, category_id, updates)
         return updated_category
-
-    except ValidationError as ve:
-        print(
-            f"CategoryService: ValidationError during category update for ID '{category_id}': {str(ve)}"
-        )
-        raise CategoryServiceError(f"Invalid category data: {str(ve)}") from ve
+    except (NotFoundError, CategoryServiceError):
+        # Re-raise application errors as-is
+        raise
     except DatabaseError as de:
         print(
             f"CategoryService: DatabaseError during category update for ID '{category_id}': {str(de)}"
@@ -157,9 +154,15 @@ def delete_category(db, category_id: str, user_id: str) -> None:
         # First verify the category exists and belongs to user
         get_category_by_id(db, category_id, user_id)
 
-        # Use DAL to delete
-        category_dal.delete_category(db, category_id)
+        # Use DAL to delete - check if deletion was successful
+        deleted = category_dal.delete_category(db, category_id)
 
+        if not deleted:
+            raise NotFoundError(f"Category with ID '{category_id}' not found.")
+
+    except (NotFoundError, CategoryServiceError):
+        # Re-raise application errors as-is
+        raise
     except DatabaseError as de:
         print(
             f"CategoryService: DatabaseError during category deletion for ID '{category_id}': {str(de)}"

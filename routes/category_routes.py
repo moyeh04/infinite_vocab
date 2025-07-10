@@ -1,9 +1,10 @@
 """Category routes - HTTP endpoints for category CRUD operations"""
 
-from flask import Blueprint, request, jsonify, g
+from flask import Blueprint, g, jsonify, request
+
 from middleware import firebase_token_required
-from services import category_service as cs
 from schemas import CategoryCreateSchema, CategoryUpdateSchema
+from services import category_service as cs
 from utils import CategoryServiceError, NotFoundError
 
 category_bp = Blueprint("category", __name__, url_prefix="/api/v1/categories")
@@ -28,8 +29,11 @@ def create_category_route():
         return jsonify(category.model_dump(by_alias=True)), 201
     except CategoryServiceError as ce:
         return jsonify({"error": str(ce)}), 400
+    except ValueError as ve:  # Pydantic validation errors
+        return jsonify({"error": f"Invalid input: {str(ve)}"}), 400
     except Exception as e:
         print(f"CategoryRoutes: Unexpected error: {e}")
+
         return jsonify({"error": "Internal server error"}), 500
 
 
@@ -69,6 +73,8 @@ def update_category_route(category_id):
         return jsonify({"error": str(ce)}), 400
     except NotFoundError as ne:
         return jsonify({"error": str(ne)}), 404
+    except ValueError as ve:  # Pydantic validation errors
+        return jsonify({"error": f"Invalid input: {str(ve)}"}), 400
     except Exception as e:
         print(f"CategoryRoutes: Unexpected error: {e}")
         return jsonify({"error": "Internal server error"}), 500
@@ -79,7 +85,7 @@ def delete_category_route(category_id):
     """Delete a category for authenticated user"""
     try:
         cs.delete_category(g.db, category_id, g.user_id)
-        return "", 204
+        return jsonify({"message": "Category deleted successfully"}), 200
     except NotFoundError as ne:
         return jsonify({"error": str(ne)}), 404
     except Exception as e:
