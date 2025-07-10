@@ -2,7 +2,7 @@
 
 from typing import List
 
-from data_access import category_dal
+from data_access import category_dal as c_dal
 from factories.category_factory import CategoryFactory
 from models import Category
 from schemas import CategoryCreateSchema, CategoryUpdateSchema
@@ -17,7 +17,7 @@ def create_category(db, user_id: str, schema: CategoryCreateSchema) -> Category:
     """Creates a new category for a user with duplicate validation"""
     try:
         # Check for duplicate category name for this user
-        existing_categories = category_dal.get_categories_by_user(db, user_id)
+        existing_categories = c_dal.get_categories_by_user(db, user_id)
         normalized_name = schema.category_name.strip().lower()
 
         for existing_category in existing_categories:
@@ -30,7 +30,7 @@ def create_category(db, user_id: str, schema: CategoryCreateSchema) -> Category:
         partial_category = CategoryFactory.create_from_schema(schema, user_id)
 
         # Use DAL to persist and get complete Category with real ID/timestamps
-        created_category = category_dal.create_category(db, partial_category)
+        created_category = c_dal.create_category(db, partial_category)
         return created_category
 
     except DatabaseError as de:
@@ -52,7 +52,7 @@ def create_category(db, user_id: str, schema: CategoryCreateSchema) -> Category:
 def get_categories_by_user(db, user_id: str) -> List[Category]:
     """Retrieves all categories for a user, sorted alphabetically"""
     try:
-        categories = category_dal.get_categories_by_user(db, user_id)
+        categories = c_dal.get_categories_by_user(db, user_id)
         return categories
 
     except DatabaseError as de:
@@ -74,7 +74,7 @@ def get_categories_by_user(db, user_id: str) -> List[Category]:
 def get_category_by_id(db, category_id: str, user_id: str) -> Category:
     """Retrieves a category by ID with user ownership validation"""
     try:
-        category = category_dal.get_category_by_id(db, category_id)
+        category = c_dal.get_category_by_id(db, category_id)
 
         # Check if category exists
         if not category:
@@ -122,7 +122,7 @@ def update_category(
             current_name = existing_category.category_name.lower()
 
             if new_name != current_name:
-                user_categories = category_dal.get_categories_by_user(db, user_id)
+                user_categories = c_dal.get_categories_by_user(db, user_id)
                 for category in user_categories:
                     if (
                         category.category_id != category_id
@@ -133,7 +133,7 @@ def update_category(
                         )
 
         # Use DAL to update and return updated category
-        updated_category = category_dal.update_category(db, category_id, updates)
+        updated_category = c_dal.update_category(db, category_id, updates)
         return updated_category
     except (NotFoundError, CategoryServiceError):
         # Re-raise application errors as-is
@@ -154,7 +154,7 @@ def delete_category(db, category_id: str, user_id: str) -> None:
         get_category_by_id(db, category_id, user_id)
 
         # Use DAL to delete - check if deletion was successful
-        deleted = category_dal.delete_category(db, category_id)
+        deleted = c_dal.delete_category(db, category_id)
 
         if not deleted:
             raise NotFoundError(f"Category with ID '{category_id}' not found.")
