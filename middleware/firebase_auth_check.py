@@ -48,3 +48,31 @@ def admin_required():
         return error_response(
             "An internal error occurred while verifying permissions.", 500
         )
+
+
+def super_admin_required():
+    """
+    Checks if the authenticated admin has 'super-admin' privileges.
+
+    This must be called AFTER both firebase_token_required and admin_required.
+    """
+    try:
+        admin_doc = g.db.collection("admins").document(g.user_id).get()
+        # We assume admin_doc.exists is true because admin_required ran first.
+        admin_data = admin_doc.to_dict()
+
+        if admin_data.get("role") != "super-admin":
+            return error_response(
+                "Forbidden: Super-admin privileges are required for this action.", 403
+            )
+
+        # If the role matches, allow the request to proceed.
+
+        return None
+    except Exception as e:
+        print(
+            f"MIDDLEWARE: Error checking super-admin status for user {g.user_id}: {e}"
+        )
+        return error_response(
+            "An internal error occurred while verifying super-admin status.", 500
+        )
