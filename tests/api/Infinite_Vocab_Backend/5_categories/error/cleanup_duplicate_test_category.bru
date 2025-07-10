@@ -1,0 +1,24 @@
+meta {
+  name: cleanup_duplicate_test_category
+  type: http
+  seq: 8
+}
+
+delete {
+  url: {{apiUrl}}/api/v1/categories/{{duplicateTestCategoryId}}
+
+  auth: none
+
+}
+
+
+headers {
+  Authorization: Bearer {{idToken}}
+}
+
+
+tests {
+  test("Cleanup successful", function() {
+    expect(res.status).to.equal(200);
+  });
+}

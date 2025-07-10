@@ -5,7 +5,7 @@ meta {
 }
 
 put {
-  url: {{apiUrl}}/api/v1/categories/{{testCategoryId}}
+  url: {{apiUrl}}/api/v1/categories/{{categoryId}}
   body: json
   auth: none
 }
@@ -17,24 +17,35 @@ headers {
 
 body:json {
   {
-    "categoryName": "Updated Bruno Category",
-    "categoryColor": "#4287f5"
+    "categoryName": "Updated Science Terms",
+    "categoryColor": "#FF5733"
   }
 }
 
 tests {
-  test("Status is 200 (OK)", function() {
+  test("Status is 200", function() {
     expect(res.status).to.equal(200);
   });
-  test("Category has been updated", function() {
-    expect(res.body.categoryName).to.equal('Updated Bruno Category');
-    expect(res.body.categoryColor).to.equal('#4287f5');
+  
+  test("Category name is updated and title cased", function() {
+    expect(res.body.categoryName).to.equal('Updated Science Terms');
   });
-  test("Category has updatedAt timestamp", function() {
+  
+  test("Category color is updated and lowercase", function() {
+    expect(res.body.categoryColor).to.equal('#ff5733');
+  });
+  
+
+  test("Updated timestamp exists", function() {
     expect(res.body).to.have.property('updatedAt');
-    expect(res.body.updatedAt).to.not.be.null;
+    expect(res.body.updatedAt).to.be.a('string');
   });
-  test("Original ID is preserved", function() {
-    expect(res.body.categoryId).to.equal(bru.getEnvVar("testCategoryId"));
+  
+  test("Category ID remains unchanged", function() {
+    expect(res.body.categoryId).to.equal(bru.getVar('categoryId'));
+  });
+  
+  test("Created timestamp remains unchanged", function() {
+    expect(res.body).to.have.property('createdAt');
   });
 }

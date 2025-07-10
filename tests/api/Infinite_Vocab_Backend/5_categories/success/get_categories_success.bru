@@ -4,6 +4,7 @@ meta {
   seq: 2
 }
 
+
 get {
   url: {{apiUrl}}/api/v1/categories/
   auth: none
@@ -11,42 +12,36 @@ get {
 
 headers {
   Authorization: Bearer {{idToken}}
-  Content-Type: application/json
 }
 
 tests {
-  test("Status is 200 (OK)", function() {
+  test("Status is 200", function() {
     expect(res.status).to.equal(200);
   });
+  
 
   test("Response is an array", function() {
     expect(res.body).to.be.an('array');
   });
+  
+  test("Categories are sorted alphabetically", function() {
+    if (res.body.length > 1) {
+      for (let i = 1; i < res.body.length; i++) {
+        expect(res.body[i].categoryName >= res.body[i-1].categoryName).to.be.true;
 
-  test("Categories have required properties", function() {
-    // Skip test if array is empty
-    if (res.body.length === 0) {
-      this.skip();
-      return;
+      }
     }
-
-    const category = res.body[0];
-    expect(category).to.have.property('categoryId');
-    expect(category).to.have.property('categoryName');
-    expect(category).to.have.property('categoryColor');
-    expect(category).to.have.property('userId');
-    expect(category).to.have.property('createdAt');
   });
-
-  test("Previously created category exists", function() {
-    // Skip test if no testCategoryId is set
-    if (!bru.getEnvVar("testCategoryId")) {
-      this.skip();
-      return;
+  
+  test("Each category has correct structure", function() {
+    if (res.body.length > 0) {
+      res.body.forEach(function(category) {
+        expect(category).to.have.property('categoryId');
+        expect(category).to.have.property('categoryName');
+        expect(category).to.have.property('categoryColor');
+        expect(category).to.have.property('userId');
+        expect(category).to.have.property('createdAt');
+      });
     }
-
-    const categoryId = bru.getEnvVar("testCategoryId");
-    const found = res.body.some(category => category.categoryId === categoryId);
-    expect(found).to.be.true;
   });
 }

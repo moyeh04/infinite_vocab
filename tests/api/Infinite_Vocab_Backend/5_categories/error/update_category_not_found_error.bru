@@ -1,33 +1,36 @@
 meta {
   name: update_category_not_found_error
   type: http
-  seq: 4
+  seq: 5
 }
 
 put {
-  url: {{apiUrl}}/api/v1/categories/nonexistent123
+  url: {{apiUrl}}/api/v1/categories/nonexistent-category-id
   body: json
   auth: none
 }
 
+
 headers {
+
   Authorization: Bearer {{idToken}}
   Content-Type: application/json
 }
 
 body:json {
   {
-    "categoryName": "Updated Name",
-    "categoryColor": "#4287f5"
+    "categoryName": "Some Name"
   }
 }
 
 tests {
-  test("Status is 404 (Not Found)", function() {
+  test("Status is 404", function() {
     expect(res.status).to.equal(404);
   });
-  test("Error message indicates category not found", function() {
+  
+
+  test("Response has not found error message", function() {
     expect(res.body).to.have.property('error');
-    expect(res.body.error.toLowerCase()).to.include('not found');
+    expect(res.body.error).to.include('not found');
   });
 }

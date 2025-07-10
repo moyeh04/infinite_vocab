@@ -1,10 +1,11 @@
 meta {
   name: create_category_validation_error
   type: http
-  seq: 2
+  seq: 1
 }
 
 post {
+
   url: {{apiUrl}}/api/v1/categories/
   body: json
   auth: none
@@ -12,6 +13,7 @@ post {
 
 headers {
   Authorization: Bearer {{idToken}}
+
   Content-Type: application/json
 }
 
@@ -23,10 +25,14 @@ body:json {
 }
 
 tests {
-  test("Status is 400 or 422 (Validation Error)", function() {
-    expect([400, 422]).to.include(res.status);
+  test("Status is 400", function() {
+    expect(res.status).to.equal(400);
   });
-  test("Response contains error information", function() {
+
+  
+  test("Response has error message", function() {
     expect(res.body).to.have.property('error');
+    expect(res.body.error).to.be.a('string');
+    expect(res.body.error).to.include('Invalid input');
   });
 }

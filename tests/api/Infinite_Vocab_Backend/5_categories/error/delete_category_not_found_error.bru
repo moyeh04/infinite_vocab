@@ -1,0 +1,27 @@
+meta {
+  name: delete_category_not_found_error
+  type: http
+  seq: 7
+}
+
+delete {
+  url: {{apiUrl}}/api/v1/categories/nonexistent-category-id
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{idToken}}
+}
+
+tests {
+  test("Status is 404", function() {
+    expect(res.status).to.equal(404);
+  });
+
+  
+  test("Response has not found error message", function() {
+    expect(res.body).to.have.property('error');
+
+    expect(res.body.error).to.include('not found');
+  });
+}

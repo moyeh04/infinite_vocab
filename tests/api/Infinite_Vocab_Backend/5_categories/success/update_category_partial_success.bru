@@ -1,0 +1,41 @@
+meta {
+  name: update_category_partial_success
+  type: http
+  seq: 5
+}
+
+put {
+  url: {{apiUrl}}/api/v1/categories/{{categoryId}}
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{idToken}}
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "categoryName": "Final Science Terms"
+  }
+}
+
+tests {
+  test("Status is 200", function() {
+    expect(res.status).to.equal(200);
+  });
+  
+  test("Only category name is updated", function() {
+    expect(res.body.categoryName).to.equal('Final Science Terms');
+  });
+  
+
+  test("Category color remains unchanged", function() {
+    expect(res.body.categoryColor).to.equal('#ff5733');
+  });
+  
+  test("Updated timestamp is refreshed", function() {
+    expect(res.body).to.have.property('updatedAt');
+  });
+}

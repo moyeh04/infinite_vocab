@@ -1,0 +1,36 @@
+meta {
+
+  name: create_category_duplicate_error
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{apiUrl}}/api/v1/categories/
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{idToken}}
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "categoryName": "Test Duplicate",
+    "categoryColor": "#123456"
+  }
+
+}
+
+
+tests {
+  test("First creation succeeds", function() {
+    expect(res.status).to.equal(201);
+  });
+}
+
+vars:post-response {
+  duplicateTestCategoryId: res.body.categoryId
+}
