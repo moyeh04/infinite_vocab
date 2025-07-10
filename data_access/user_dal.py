@@ -71,3 +71,15 @@ def update_user(db, user_id: str, updates: dict) -> Optional[User]:
 # We don't need a specific delete function for now, as users deleting
 # their own accounts is a more complex process we can add later if needed.
 # It often involves clean-up of associated data. We'll follow YAGNI here.
+
+
+def list_all_users(db) -> list[User]:
+    """Retrieves all user documents from the users collection."""
+    try:
+        users = []
+        docs = db.collection("users").stream()
+        for doc in docs:
+            users.append(User(**doc.to_dict(), userId=doc.id))
+        return users
+    except Exception as e:
+        raise DatabaseError(f"Failed to list all users: {e}") from e

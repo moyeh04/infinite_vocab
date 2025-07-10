@@ -87,3 +87,10 @@ class UserServiceError(ApplicationError):
 
     def __init__(self, message="A user service operation failed.", context=None):
         super().__init__(message, status_code=500, context=context)
+
+
+class AdminServiceError(ApplicationError):
+    """Base exception for errors specific to the AdminService."""
+
+    def __init__(self, message="An admin service operation failed.", context=None):
+        super().__init__(message, status_code=500, context=context)

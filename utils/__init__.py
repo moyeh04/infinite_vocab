@@ -2,6 +2,7 @@
 
 
 from .exceptions import (
+    AdminServiceError,
     ApplicationError,
     CategoryServiceError,
     DatabaseError,
@@ -18,6 +19,7 @@ from .response_helpers import camelized_response, decamelized_request, error_res
 
 __all__ = [
     # Exceptions
+    "AdminServiceError",
     "ApplicationError",
     "DatabaseError",
     "DuplicateEntryError",

@@ -2,6 +2,7 @@
 
 
 from . import (
+    admin_service,
     category_service,
     search_service,
     user_service,
@@ -11,6 +12,7 @@ from . import (
 from .search_service import find_words_and_categories
 
 __all__ = [
+    "admin_service",
     "user_service",
     "word_service",
     "category_service",

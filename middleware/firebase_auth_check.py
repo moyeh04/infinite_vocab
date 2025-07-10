@@ -21,3 +21,30 @@ def firebase_token_required():
         print(f"Error verifying Firebase ID token: {e}")
 
         return error_response("Invalid or expired authentication token", 401)
+
+
+def admin_required():
+    """
+    Checks if the authenticated user has admin privileges.
+
+    This must be called AFTER firebase_token_required.
+    """
+    # This check is a safeguard in case the middleware is called out of order.
+    if not hasattr(g, "user_id"):
+        return error_response("Authentication token is required.", 401)
+
+    try:
+        admin_doc = g.db.collection("admins").document(g.user_id).get()
+
+        if not admin_doc.exists:
+            return error_response("Forbidden: Admin privileges are required.", 403)
+
+        # If the document exists, the user is an admin.
+        # Return None to allow the request to proceed to the route.
+        return None
+
+    except Exception as e:
+        print(f"MIDDLEWARE: Error checking admin status for user {g.user_id}: {e}")
+        return error_response(
+            "An internal error occurred while verifying permissions.", 500
+        )
