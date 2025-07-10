@@ -1,0 +1,33 @@
+meta {
+  name: link_word_to_category
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{apiUrl}}/api/v1/categories/{{linkTestCategoryId}}/words
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{idToken}}
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "wordId": "{{linkTestWordId}}"
+  }
+}
+
+tests {
+  test("Status is 200 OK", function () {
+    expect(res.status).to.equal(200);
+  });
+  
+  test("Response has success message", function () {
+    expect(res.body).to.have.property('message');
+    expect(res.body.message).to.include('successfully added');
+  });
+}

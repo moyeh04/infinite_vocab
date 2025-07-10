@@ -1,0 +1,29 @@
+meta {
+  name: get_words_in_category
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{apiUrl}}/api/v1/categories/{{linkTestCategoryId}}/words
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{idToken}}
+}
+
+tests {
+  test("Status is 200 OK", function () {
+    expect(res.status).to.equal(200);
+  });
+  
+  test("Response is an array with one word", function () {
+    expect(res.body).to.be.an('array');
+    expect(res.body).to.have.lengthOf(1);
+  });
+  
+  test("Word in array is the correct one", function () {
+    expect(res.body[0].word_id).to.equal(bru.getVar('linkTestWordId'));
+  });
+}
