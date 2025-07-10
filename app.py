@@ -1,9 +1,8 @@
 from flask import Flask
 
 from config import firebase_init  # noqa: F401
-from routes.user_routes import user_bp
-from routes.word_routes import words_bp
-from utils.response_helpers import camelized_response
+from routes import user_bp, words_bp
+from utils import camelized_response
 
 app = Flask(__name__)
 app.register_blueprint(user_bp)

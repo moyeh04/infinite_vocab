@@ -1,6 +1,6 @@
 from firebase_admin import firestore
 
-from utils.helpers import generate_random_code
+from utils import generate_random_code
 
 
 def _handle_existing_user(user_doc_ref, user_doc, user_name):

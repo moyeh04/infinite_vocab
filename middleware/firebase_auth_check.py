@@ -1,7 +1,7 @@
 from firebase_admin import auth, firestore
 from flask import g, request
 
-from utils.response_helpers import error_response
+from utils import error_response
 
 
 def firebase_token_required():

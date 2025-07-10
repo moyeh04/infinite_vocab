@@ -1,7 +1,7 @@
 from firebase_admin import firestore
 
 from data_access import word_dal as wd
-from utils.exceptions import (
+from utils import (
     DatabaseError,
     DuplicateEntryError,
     ForbiddenError,

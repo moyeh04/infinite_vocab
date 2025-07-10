@@ -1,8 +1,8 @@
 from flask import Blueprint, g, request
 
-from middleware.firebase_auth_check import firebase_token_required
-from services.user_service import get_or_create_user_code as get_user_code
-from utils.response_helpers import (
+from middleware import firebase_token_required
+from services import get_or_create_user_code as get_user_code
+from utils import (
     camelized_response,
     decamelized_request,
     error_response,

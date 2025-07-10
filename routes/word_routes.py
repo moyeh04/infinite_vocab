@@ -1,15 +1,13 @@
 from flask import Blueprint, g, request
 
-from middleware.firebase_auth_check import firebase_token_required
+from middleware import firebase_token_required
 from services import word_service as ws
-from utils.exceptions import (
+from utils import (
     # DatabaseError, # It will rise as WordServiceError
     DuplicateEntryError,
     ForbiddenError,
     NotFoundError,
     WordServiceError,
-)
-from utils.response_helpers import (
     camelized_response,
     decamelized_request,
     error_response,

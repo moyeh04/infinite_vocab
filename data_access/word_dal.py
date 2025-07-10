@@ -1,6 +1,6 @@
 from firebase_admin import firestore
 
-from utils.exceptions import DatabaseError
+from utils import DatabaseError
 
 
 def _execute_word_query(
