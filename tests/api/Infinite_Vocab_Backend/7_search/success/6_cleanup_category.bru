@@ -1,0 +1,21 @@
+meta {
+  name: cleanup_search_category
+  type: http
+  seq: 6
+}
+
+delete {
+  url: {{apiUrl}}/api/v1/categories/{{searchTestCategoryId}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{idToken}}
+}
+
+tests {
+  test("Cleanup category successful", function() {
+    expect(res.status).to.equal(200);
+  });
+}

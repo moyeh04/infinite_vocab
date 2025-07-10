@@ -1,0 +1,31 @@
+meta {
+  name: search_no_results
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{apiUrl}}/api/v1/search?q=NonExistentQwerty
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{idToken}}
+}
+
+tests {
+  test("Status is 200 OK", function() {
+    expect(res.status).to.equal(200);
+  });
+
+  test("Response has correct shape", function() {
+    expect(res.body).to.have.property('words');
+    expect(res.body).to.have.property('categories');
+  });
+
+  test("Returns empty lists for no results", function() {
+    expect(res.body.words).to.have.lengthOf(0);
+    expect(res.body.categories).to.have.lengthOf(0);
+  });
+}

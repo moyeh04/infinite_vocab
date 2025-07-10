@@ -1,0 +1,35 @@
+meta {
+  name: setup_search_category
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{apiUrl}}/api/v1/categories/
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{idToken}}
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "categoryName": "TestableCategory",
+    "categoryColor": "#1A2B3C"
+  }
+}
+
+vars:post-response {
+  searchTestCategoryId: res.body.categoryId
+}
+
+tests {
+  test("Status is 201", function() {
+    expect(res.status).to.equal(201);
+  });
+
+}
+

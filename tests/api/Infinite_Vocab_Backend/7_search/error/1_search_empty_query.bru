@@ -1,0 +1,26 @@
+meta {
+  name: search_empty_query
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{apiUrl}}/api/v1/search?q=
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{idToken}}
+}
+
+tests {
+  test("Status is 200 OK for empty query", function() {
+    expect(res.status).to.equal(200);
+  });
+
+  test("Returns empty lists for empty query", function() {
+    expect(res.body.words).to.have.lengthOf(0);
+    expect(res.body.categories).to.have.lengthOf(0);
+  });
+}

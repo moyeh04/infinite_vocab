@@ -1,0 +1,21 @@
+meta {
+  name: cleanup_search_word
+  type: http
+  seq: 5
+}
+
+delete {
+  url: {{apiUrl}}/api/v1/words/{{searchTestWordId}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{idToken}}
+}
+
+tests {
+  test("Cleanup word successful", function() {
+    expect(res.status).to.equal(200);
+  });
+}
