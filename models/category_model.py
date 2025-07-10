@@ -7,11 +7,11 @@ from pydantic import BaseModel, Field
 class Category(BaseModel):
     """Category data model for responses and internal operations"""
 
-    category_id: str = Field(alias="categoryId")
+    category_id: Optional[str] = Field(alias="categoryId")
     user_id: str = Field(alias="userId")
     category_name: str = Field(alias="categoryName")
     category_color: str = Field(alias="categoryColor", default="#FFFFFF")
-    created_at: datetime = Field(alias="createdAt")
+    created_at: Optional[datetime] = Field(alias="createdAt")
     updated_at: Optional[datetime] = Field(alias="updatedAt", default=None)
 
     class Config:
