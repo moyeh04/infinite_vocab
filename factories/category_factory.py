@@ -39,8 +39,8 @@ class CategoryFactory:
 
     @staticmethod
     def _normalize_category_name(name: str) -> str:
-        """Business rule: title case and trimmed."""
-        return name.strip().title()
+        """Business rule: lowercase and trimmed for searching."""
+        return name.strip().lower()
 
     @staticmethod
     def _validate_color_format(color: str) -> str:

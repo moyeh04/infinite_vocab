@@ -111,6 +111,7 @@ def create_word_for_user(
     Raises DuplicateEntryError if word already exists.
     Raises WordServiceError for other issues.
     """
+    word_text_to_add = word_text_to_add.lower()
     try:
         existence_details = _get_word_existence_details(db, user_id, word_text_to_add)
 
@@ -246,6 +247,7 @@ def update_word_for_user(db, user_id: str, word_id: str, new_word_text: str) -> 
     Returns a dictionary with a success message and the word_id.
     Raises NotFoundError, ForbiddenError, or WordServiceError.
     """
+    new_word_text = new_word_text.lower()
     try:
         # First we check existence and verify ownership
         old_word_data = _get_and_verify_word_ownership(

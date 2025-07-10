@@ -2,20 +2,21 @@
 
 from .exceptions import (
     ApplicationError,
-    DatabaseError,
-    ValidationError,
-    DuplicateEntryError,
-    NotFoundError,
-    ForbiddenError,
-    WordServiceError,
     CategoryServiceError,
+    DatabaseError,
+    DuplicateEntryError,
+    ForbiddenError,
+    NotFoundError,
+    SearchServiceError,
+    ValidationError,
+    WordServiceError,
 )
+from .helpers import generate_random_code
 from .response_helpers import (
     camelized_response,
     decamelized_request,
     error_response,
 )
-from .helpers import generate_random_code
 
 __all__ = [
     "ApplicationError",
@@ -30,4 +31,5 @@ __all__ = [
     "decamelized_request",
     "error_response",
     "generate_random_code",
+    "SearchServiceError",
 ]
