@@ -10,7 +10,6 @@ from utils import (
     CategoryServiceError,
     DatabaseError,
     NotFoundError,
-    ValidationError,
 )
 
 

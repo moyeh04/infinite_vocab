@@ -1,13 +1,14 @@
 from flask import Flask
 
 from config import firebase_init  # noqa: F401
-from routes import user_bp, words_bp, category_bp
+from routes import category_bp, user_bp, word_category_bp, words_bp
 from utils import camelized_response
 
 app = Flask(__name__)
 app.register_blueprint(user_bp)
 app.register_blueprint(words_bp)
 app.register_blueprint(category_bp)
+app.register_blueprint(word_category_bp)
 
 
 @app.route("/")
@@ -17,7 +18,6 @@ def root_info():
             "message": "Welcome to the Infinite Vocabulary API!",
             "version": "v1.0",
             "status": "healthy",
-            # "documentation": "/api/docs"
         },
         200,
     )
