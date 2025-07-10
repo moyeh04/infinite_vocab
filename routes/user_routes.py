@@ -1,59 +1,68 @@
-from flask import Blueprint, g, request
+"""User routes - HTTP endpoints for user operations."""
+
+from flask import Blueprint, g, jsonify, request
 
 from middleware import firebase_token_required
-from services import get_or_create_user_code as get_user_code
-from utils import (
-    camelized_response,
-    decamelized_request,
-    error_response,
-)
+from schemas import UserCreateSchema, UserUpdateSchema
+from services import user_service
+from utils import NotFoundError, UserServiceError, ValidationError
 
 user_bp = Blueprint("user_api", __name__, url_prefix="/api/v1/users")
 
 
 @user_bp.before_request
 def authentication_before_request():
+    """Apply Firebase token authentication to all routes in this blueprint."""
     return firebase_token_required()
 
 
 @user_bp.route("/", methods=["POST"])
-def create_user():
-    user_id = g.user_id
+def get_or_create_user_route():
+    """
+    Handles initial user sign-in.
+    Returns 201 if a new user is created, 200 if an existing user is retrieved.
+    """
+
     try:
-        request_data = request.get_json()
-        if not request_data:
-            return error_response("Missing or invalid JSON request body", 400)
+        # 1. Validate the incoming JSON against our schema.
+        # This replaces manual checks and the old 'decamelized_request' helper.
+        schema = UserCreateSchema(**request.get_json())
 
-        # Convert camelCase from frontend to snake_case for Python
-        request_data = decamelized_request(request_data)
+        # 2. Call the service, which now returns two values.
+        user, was_created = user_service.get_or_create_user(g.db, g.user_id, schema)
 
-        user_name = request_data.get("user_name")
-        if not user_name or not user_name.strip():
-            return error_response("Missing or empty 'userName' field", 400)
+        # 3. Set the status code based on whether the user was created.
+        status_code = 201 if was_created else 200
+        return jsonify(user.model_dump(by_alias=True)), status_code
 
-        user_name = user_name.strip()
+    except (ValidationError, ValueError) as e:
+        return jsonify({"error": f"Invalid input: {e}"}), 400
+    except UserServiceError as e:
+        return jsonify({"error": str(e)}), 500
 
-        # --- Call the user service to get or create the user's application code ---
-        user_code = get_user_code(user_id, user_name)
 
-        # --- Check if the user service returned a valid code ---
-        if user_code is None:
-            # If the service function returned None, it means there was an error getting/creating the code
-            print(f"Error: Failed to get or create user code for user_id {user_id}.")
-            # Return a 500 Internal Server Error to indicate a server-side problem
-            return error_response("Failed to retrieve or create user data", 500)
+@user_bp.route("/me", methods=["GET"])
+def get_my_profile_route():
+    """Fetches the profile of the currently authenticated user."""
+    try:
+        user = user_service.get_user_profile(g.db, g.user_id)
+        return jsonify(user.model_dump(by_alias=True)), 200
+    except NotFoundError as e:
+        return jsonify({"error": str(e)}), 404
+    except UserServiceError as e:
+        return jsonify({"error": str(e)}), 500
 
-        return camelized_response(
-            {
-                "message": "User authenticated successfully",
-                "user_id": user_id,
-                "user_name": user_name,
-                "user_code": user_code,
-            },
-            201,
-        )
-    except Exception as e:
-        print(
-            f"Unexpected error in create_user for user_id {user_id if 'user_id' in locals() else 'unknown'}: {str(e)}"
-        )
-        return error_response("An unexpected server error occurred", 500)
+
+@user_bp.route("/me", methods=["PATCH"])
+def update_my_profile_route():
+    """Updates the profile of the currently authenticated user."""
+    try:
+        schema = UserUpdateSchema(**request.get_json())
+        user = user_service.update_user_profile(g.db, g.user_id, schema)
+        return jsonify(user.model_dump(by_alias=True)), 200
+    except (ValidationError, ValueError) as e:
+        return jsonify({"error": f"Invalid input: {e}"}), 400
+    except NotFoundError as e:
+        return jsonify({"error": str(e)}), 404
+    except UserServiceError as e:
+        return jsonify({"error": str(e)}), 500

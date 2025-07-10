@@ -80,3 +80,10 @@ class SearchServiceError(ApplicationError):
 
     def __init__(self, message="A search service operation failed.", context=None):
         super().__init__(message, status_code=500, context=context)
+
+
+class UserServiceError(ApplicationError):
+    """Base exception for errors specific to the UserService."""
+
+    def __init__(self, message="A user service operation failed.", context=None):
+        super().__init__(message, status_code=500, context=context)

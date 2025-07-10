@@ -1,14 +1,20 @@
 # Services package - Business logic orchestration
 
 
-from . import category_service, word_category_service, word_service
+from . import (
+    category_service,
+    search_service,
+    user_service,
+    word_category_service,
+    word_service,
+)
 from .search_service import find_words_and_categories
-from .user_service import get_or_create_user_code
 
 __all__ = [
-    "get_or_create_user_code",
+    "user_service",
     "word_service",
     "category_service",
     "word_category_service",
+    "search_service",
     "find_words_and_categories",
 ]

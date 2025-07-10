@@ -1,5 +1,6 @@
 # Utils package - Utilities, exceptions, and helper functions
 
+
 from .exceptions import (
     ApplicationError,
     CategoryServiceError,
@@ -8,28 +9,28 @@ from .exceptions import (
     ForbiddenError,
     NotFoundError,
     SearchServiceError,
+    UserServiceError,
     ValidationError,
     WordServiceError,
 )
 from .helpers import generate_random_code
-from .response_helpers import (
-    camelized_response,
-    decamelized_request,
-    error_response,
-)
+from .response_helpers import camelized_response, decamelized_request, error_response
 
 __all__ = [
+    # Exceptions
     "ApplicationError",
     "DatabaseError",
-    "ValidationError",
     "DuplicateEntryError",
-    "NotFoundError",
     "ForbiddenError",
+    "NotFoundError",
+    "ValidationError",
     "WordServiceError",
     "CategoryServiceError",
+    "SearchServiceError",
+    "UserServiceError",
+    # Helpers
+    "generate_random_code",
     "camelized_response",
     "decamelized_request",
     "error_response",
-    "generate_random_code",
-    "SearchServiceError",
 ]

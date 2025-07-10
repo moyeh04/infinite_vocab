@@ -1,124 +1,65 @@
-from firebase_admin import firestore
+"""User Service - business logic for user operations."""
 
-from utils import generate_random_code
+from data_access import user_dal as u_dal
+from factories import UserFactory
+from models import User
+from schemas import UserCreateSchema, UserUpdateSchema
+from utils import DatabaseError, NotFoundError, UserServiceError
 
 
-def _handle_existing_user(user_doc_ref, user_doc, user_name):
+def get_or_create_user(db, user_id: str, schema: UserCreateSchema) -> tuple[User, bool]:
     """
-    Handles the case where a document exists for the user.
-    Retrieves the code, updates name if needed, generates/adds code if missing.
-    Returns the user code or None on failure within this step.
+    Retrieves a user if they exist, otherwise creates a new one.
+    Returns a tuple containing the User model and a boolean indicating if the user was newly created.
     """
-    print(f"Document found for user_id {user_doc_ref.id} in 'users' collection.")
-
-    user_data = user_doc.to_dict() or {}
-    existing_code = user_data.get("user_code")
-
-    needs_update = False
-    data_to_update = {}
-    code_to_return = None
-
-    # Check if the provided user_name is different from the stored name (if any)
-    stored_name = user_data.get("user_name")
-    if user_name is not None and user_name != stored_name:
-        data_to_update["user_name"] = user_name
-        needs_update = True
-        print(
-            f"Name mismatch for user_id {user_doc_ref.id}. Stored: {stored_name}, Provided: {user_name}. Will update name."
-        )
-
-    # Check if the code was found in the existing document
-    if existing_code is not None:
-        # Code was found, this is the code we will return
-        code_to_return = existing_code
-        print(f"Found existing user code: {existing_code}")
-    else:
-        # Document exists but the code field is missing.
-        print(
-            f"Warning: Document for user_id {user_doc_ref.id} exists but contains no user code. Generating new."
-        )
-        needs_update = True
-        # Generate a new code
-        new_user_code = generate_random_code(8)
-        print(f"Generated new user code: {new_user_code}")
-        data_to_update["user_code"] = new_user_code
-        code_to_return = new_user_code
-
-    if needs_update:
-        data_to_update["updatedAt"] = firestore.SERVER_TIMESTAMP
-        try:
-            user_doc_ref.update(data_to_update)
-            print(
-                f"Updated document for user_id {user_doc_ref.id} with: {data_to_update}"
-            )
-        except Exception as e:
-            print(
-                f"Error updating document for user_id {user_doc_ref.id} with {data_to_update}: {e}"
-            )
-            return None
-
-    # Return the code we determined (either existing or the new one generated because it was missing)
-    return code_to_return
-
-
-def _handle_new_user(user_doc_ref, user_name):
-    """
-    Handles the case where a document does not exist for the user.
-    Generates a new code, creates the document, and saves initial data.
-    Returns the new user code or None on failure within this step.
-    """
-    print(
-        f"Document not found for user_id {user_doc_ref.id} in 'users' collection. Generating and saving new code."
-    )
-
-    # Generate a new unique code for the user
-    new_user_code = generate_random_code(8)
-    print(f"Generated new user code: {new_user_code}")
-
-    data_to_save = {
-        "user_id": user_doc_ref.id,
-        "user_name": user_name,
-        "user_code": new_user_code,
-        "createdAt": firestore.SERVER_TIMESTAMP,
-        "updatedAt": firestore.SERVER_TIMESTAMP,
-    }
-
     try:
-        user_doc_ref.set(data_to_save)
-        print(
-            f"Created new document for user_id {user_doc_ref.id} in 'users' with code {new_user_code}"
-        )
-    except Exception as e:
-        print(f"Error creating document for user_id {user_doc_ref.id}: {e}")
-        return None
+        # 1. Check if the user already exists in the database.
+        existing_user = u_dal.get_user_by_id(db, user_id)
+        if existing_user:
+            print(f"SERVICE: Found existing user with ID '{user_id}'.")
+            return existing_user, False  # Return user, was_created = False
 
-    return new_user_code
+        # 2. If user doesn't exist, use the factory to create a new User model.
+        print(f"SERVICE: No user found for ID '{user_id}'. Creating new user.")
+        new_user_model = UserFactory.create_from_schema(schema, user_id)
+
+        # 3. Pass the new model to the DAL to save it in Firestore.
+        created_user = u_dal.create_user(db, new_user_model)
+        return created_user, True  # Return user, was_created = True
+
+    except DatabaseError as e:
+        # Wrap lower-level errors in a service-specific exception
+        raise UserServiceError("Database operation failed.") from e
 
 
-def get_or_create_user_code(user_id, user_name):
-    """
-    Checks Firestore for an existing user code for the given user_id.
-    If found, returns it. If not, generates a new one and saves it.
-    Optionally updates the user's name if different from stored name.
-    Returns the user code (string) or None on failure.
-    """
-    db = firestore.client()
-
-    user_doc_ref = db.collection("users").document(user_id)
-
+def get_user_profile(db, user_id: str) -> User:
+    """Retrieves a user's profile by their ID."""
     try:
-        user_doc = user_doc_ref.get()
-        print(f"Attempted to get document for user_id: {user_id}")
+        user = u_dal.get_user_by_id(db, user_id)
+        if not user:
+            # This case should be rare if the user is authenticated, but is good practice.
+            raise NotFoundError(f"User with ID '{user_id}' not found.")
+        return user
+    except DatabaseError as e:
+        raise UserServiceError("Failed to retrieve user profile.") from e
 
-        # --- MAIN BRANCHING POINT: Delegate based on document existence ---
-        if user_doc.exists:
-            # Document exists, call the helper to handle it
-            return _handle_existing_user(user_doc_ref, user_doc, user_name)
-        else:
-            # Document does not exist, call the helper to handle it
-            return _handle_new_user(user_doc_ref, user_name)
 
-    except Exception as e:
-        # This catch is for errors during the initial .get() operation itself
-        print(f"Error during initial document get for user_id {user_id}: {e}")
-        return None
+def update_user_profile(db, user_id: str, schema: UserUpdateSchema) -> User:
+    """Updates a user's profile information."""
+    try:
+        # 1. Use the factory to create a dictionary of fields to update.
+        # This filters out any fields that were not provided in the request.
+        updates = UserFactory.create_update_dict(schema)
+
+        if not updates:
+            # If no actual data was sent, just return the current user profile.
+            return get_user_profile(db, user_id)
+
+        # 2. Pass the updates to the DAL.
+        updated_user = u_dal.update_user(db, user_id, updates)
+        if not updated_user:
+            raise NotFoundError(f"User with ID '{user_id}' not found for update.")
+
+        return updated_user
+    except (DatabaseError, NotFoundError) as e:
+        raise UserServiceError("Failed to update user profile.") from e
