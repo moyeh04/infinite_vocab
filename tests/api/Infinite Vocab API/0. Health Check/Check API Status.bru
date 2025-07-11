@@ -1,0 +1,21 @@
+meta {
+  name: Check API Status
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{appUrl}}/
+  body: none
+  auth: none
+}
+
+tests {
+  test("Status code is 200", function () {
+      expect(res.getStatus()).to.equal(200);
+  });
+  test("API is healthy", function () {
+      var jsonData = res.getBody();
+      expect(jsonData.status).to.eql('healthy');
+  });
+}

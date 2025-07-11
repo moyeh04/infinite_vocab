@@ -1,0 +1,19 @@
+meta {
+  name: Search for Word/Category
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{appUrl}}/api/v1/search?q=resilience
+  body: none
+  auth: bearer
+}
+
+params:query {
+  q: resilience
+}
+
+auth:bearer {
+  token: {{userToken}}
+}

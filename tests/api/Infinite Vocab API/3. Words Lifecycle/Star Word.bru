@@ -1,0 +1,15 @@
+meta {
+  name: Star Word
+  type: http
+  seq: 7
+}
+
+post {
+  url: {{appUrl}}/api/v1/words/{{wordId}}/star
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{userToken}}
+}

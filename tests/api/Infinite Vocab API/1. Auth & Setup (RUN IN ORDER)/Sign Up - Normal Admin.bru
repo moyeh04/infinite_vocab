@@ -1,0 +1,36 @@
+meta {
+  name: Sign Up - Normal Admin
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{authUrl}}/identitytoolkit.googleapis.com/v1/accounts:signUp?key=fake-api-key
+  body: json
+  auth: none
+}
+
+params:query {
+  key: fake-api-key
+}
+
+body:json {
+  {
+    "email": "admin_{{$randomInt}}@example.com",
+    "password": "password123",
+    "returnSecureToken": true
+  }
+}
+
+vars:post-response {
+  normalAdminToken: res.body.idToken
+}
+
+tests {
+  test("Normal Admin SignUp Successful", function () { expect(res.getStatus()).to.equal(200); });
+  const responseData = res.getBody();
+  if (responseData.idToken) {
+      bru.setVar("adminToken", responseData.idToken);
+      bru.setVar("adminId", responseData.localId);
+  }
+}

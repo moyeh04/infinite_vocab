@@ -1,0 +1,28 @@
+meta {
+  name: Create Word for Linking
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{appUrl}}/api/v1/words
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{userToken}}
+}
+
+body:json {
+  {
+      "wordText": "resilience_{{$timestamp}}",
+      "descriptionText": "The capacity to recover quickly from difficulties; toughness.",
+      "exampleText": "Her resilience in the face of adversity was admirable."
+  }
+}
+
+tests {
+  const responseData = res.getBody();
+  if (responseData.wordId) { bru.setVar("linkTestWordId", responseData.wordId); }
+}

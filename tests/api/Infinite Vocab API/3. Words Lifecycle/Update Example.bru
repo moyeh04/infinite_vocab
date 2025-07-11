@@ -1,0 +1,27 @@
+meta {
+  name: Update Example
+  type: http
+  seq: 9
+}
+
+patch {
+  url: {{appUrl}}/api/v1/words/{{wordId}}/examples/{{exampleId}}
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{userToken}}
+}
+
+body:json {
+  {
+      "exampleText": "Their innovative design revolutionized the entire industry"
+  }
+}
+
+body:text {
+  {
+      "exampleText": "The joy of victory was ephemeral."
+  }
+}

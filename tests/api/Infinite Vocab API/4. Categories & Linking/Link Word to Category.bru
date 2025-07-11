@@ -1,0 +1,21 @@
+meta {
+  name: Link Word to Category
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{appUrl}}/api/v1/categories/{{linkTestCategoryId}}/words
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{userToken}}
+}
+
+body:json {
+  {
+      "wordId": "{{linkTestWordId}}"
+  }
+}

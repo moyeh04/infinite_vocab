@@ -1,0 +1,21 @@
+meta {
+  name: Update Word Text
+  type: http
+  seq: 4
+}
+
+patch {
+  url: {{appUrl}}/api/v1/words/{{wordId}}
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{userToken}}
+}
+
+body:json {
+  {
+      "wordText": "ephemeral_updated_{{$timestamp}}"
+  }
+}

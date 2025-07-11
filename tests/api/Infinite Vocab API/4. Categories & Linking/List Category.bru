@@ -1,0 +1,11 @@
+meta {
+  name: List Category
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{appUrl}}/api/v1/categories/{{categoryId}}
+  body: none
+  auth: inherit
+}

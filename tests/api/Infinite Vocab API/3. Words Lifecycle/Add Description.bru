@@ -1,0 +1,27 @@
+meta {
+  name: Add Description
+  type: http
+  seq: 5
+}
+
+post {
+  url: {{appUrl}}/api/v1/words/{{wordId}}/descriptions
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{userToken}}
+}
+
+body:json {
+  {
+      "descriptionText": "A fleeting moment in time."
+  }
+}
+
+body:text {
+  {
+      "descriptionText": "A fleeting moment in time."
+  }
+}

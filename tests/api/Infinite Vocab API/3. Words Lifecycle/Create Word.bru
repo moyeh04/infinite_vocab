@@ -1,0 +1,31 @@
+meta {
+  name: Create Word
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{appUrl}}/api/v1/words
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{userToken}}
+}
+
+body:json {
+  {
+      "wordText": "ephemeral_{{$timestamp}}",
+      "descriptionText": "Lasting for a very short time.",
+      "exampleText": "The beauty of the cherry blossoms is ephemeral."
+  }
+}
+
+tests {
+  test("Status code is 201", function () { expect(res.getStatus()).to.equal(201); });
+  const responseData = res.getBody();
+  if (responseData.wordId) { bru.setVar("wordId", responseData.wordId); }
+  if (responseData.descriptions && responseData.descriptions.length > 0) { bru.setVar("descriptionId", responseData.descriptions[0].descriptionId); }
+  if (responseData.examples && responseData.examples.length > 0) { bru.setVar("exampleId", responseData.examples[0].exampleId); }
+}

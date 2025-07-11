@@ -1,0 +1,15 @@
+meta {
+  name: Get My Score History (Empty)
+  type: http
+  seq: 7
+}
+
+get {
+  url: {{appUrl}}/api/v1/users/me/score-history
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{userToken}}
+}

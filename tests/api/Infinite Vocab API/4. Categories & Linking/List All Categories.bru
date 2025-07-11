@@ -1,0 +1,11 @@
+meta {
+  name: List All Categories
+  type: http
+  seq: 5
+}
+
+get {
+  url: {{appUrl}}/api/v1/categories/{{linkTestCategoryId}}/words
+  body: none
+  auth: inherit
+}

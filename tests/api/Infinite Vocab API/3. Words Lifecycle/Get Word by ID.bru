@@ -1,0 +1,15 @@
+meta {
+  name: Get Word by ID
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{appUrl}}/api/v1/words/{{wordId}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{userToken}}
+}

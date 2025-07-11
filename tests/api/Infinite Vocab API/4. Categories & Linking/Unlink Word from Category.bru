@@ -1,0 +1,15 @@
+meta {
+  name: Unlink Word from Category
+  type: http
+  seq: 7
+}
+
+delete {
+  url: {{appUrl}}/api/v1/categories/{{linkTestCategoryId}}/words/{{linkTestWordId}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{userToken}}
+}

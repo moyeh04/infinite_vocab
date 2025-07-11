@@ -1,0 +1,21 @@
+meta {
+  name: Update Description
+  type: http
+  seq: 8
+}
+
+patch {
+  url: {{appUrl}}/api/v1/words/{{wordId}}/descriptions/{{descriptionId}}
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{userToken}}
+}
+
+body:json {
+  {
+      "descriptionText": "A fleeting moment in time."
+  }
+}

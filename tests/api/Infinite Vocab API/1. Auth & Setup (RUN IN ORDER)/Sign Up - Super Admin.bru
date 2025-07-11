@@ -1,0 +1,52 @@
+meta {
+  name: Sign Up - Super Admin
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{authUrl}}/identitytoolkit.googleapis.com/v1/accounts:signUp?key=fake-api-key
+  body: json
+  auth: none
+}
+
+params:query {
+  key: fake-api-key
+}
+
+body:json {
+  {
+    "email": "superadmin_{{$randomInt}}@example.com",
+    "password": "password123",
+    "returnSecureToken": true
+  }
+}
+
+body:text {
+  {
+    "email": "superadmin_{{$randomInt}}@example.com",
+    "password": "password123",
+    "returnSecureToken": true
+  }
+}
+
+tests {
+  test("Super Admin SignUp Successful", function () { expect(res.getStatus()).to.equal(200); });
+  const responseData = res.getBody();
+  if (responseData.idToken) {
+      bru.setVar("superAdminToken", responseData.idToken);
+      bru.setVar("superAdminId", responseData.localId);
+  }
+}
+
+docs {
+  ## CRITICAL MANUAL STEP
+  
+  After running this request ONCE, you must manually make this user a super admin in your Firestore Emulator.
+  
+  1. Copy the `superAdminId` from the collection variables.
+  2. Go to the Firestore Emulator UI (localhost:4000).
+  3. Create a new collection named `admins`.
+  4. Create a new document in the `admins` collection. The **Document ID** must be the `superAdminId` you copied.
+  5. Inside this document, add a field named `role` with the string value `super-admin`.
+}

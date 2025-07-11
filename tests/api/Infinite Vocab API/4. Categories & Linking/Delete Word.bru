@@ -1,0 +1,15 @@
+meta {
+  name: Delete Word
+  type: http
+  seq: 8
+}
+
+delete {
+  url: {{appUrl}}/api/v1/categories/{{linkTestCategoryId}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{userToken}}
+}

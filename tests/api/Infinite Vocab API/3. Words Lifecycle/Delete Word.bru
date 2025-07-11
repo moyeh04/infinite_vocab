@@ -1,0 +1,15 @@
+meta {
+  name: Delete Word
+  type: http
+  seq: 12
+}
+
+delete {
+  url: {{appUrl}}/api/v1/words/{{wordId}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{userToken}}
+}

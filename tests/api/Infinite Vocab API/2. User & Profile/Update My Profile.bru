@@ -1,0 +1,21 @@
+meta {
+  name: Update My Profile
+  type: http
+  seq: 5
+}
+
+patch {
+  url: {{appUrl}}/api/v1/users/me
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{userToken}}
+}
+
+body:json {
+  {
+      "userName": "Test User Updated"
+  }
+}

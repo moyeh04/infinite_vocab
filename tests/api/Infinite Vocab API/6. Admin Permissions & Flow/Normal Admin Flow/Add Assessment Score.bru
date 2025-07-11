@@ -1,0 +1,22 @@
+meta {
+  name: Add Assessment Score
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{appUrl}}/api/v1/admin/students/{{userId}}/score
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{adminToken}}
+}
+
+body:json {
+  {
+      "scoreChange": 15,
+      "reason": "Excellent weekly progress."
+  }
+}

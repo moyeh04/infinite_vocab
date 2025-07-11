@@ -1,0 +1,9 @@
+{
+  "version": "1",
+  "name": "Infinite Vocab API",
+  "type": "collection",
+  "ignore": [
+    "node_modules",
+    ".git"
+  ]
+}

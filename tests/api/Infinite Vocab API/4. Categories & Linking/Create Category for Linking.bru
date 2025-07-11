@@ -1,0 +1,27 @@
+meta {
+  name: Create Category for Linking
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{appUrl}}/api/v1/categories
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{userToken}}
+}
+
+body:json {
+  {
+      "categoryName": "Character Traits {{$timestamp}}",
+      "categoryColor": "#1ABC9C"
+  }
+}
+
+tests {
+  const responseData = res.getBody();
+  if (responseData.categoryId) { bru.setVar("linkTestCategoryId", responseData.categoryId); }
+}

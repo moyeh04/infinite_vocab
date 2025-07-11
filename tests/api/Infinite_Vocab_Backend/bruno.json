@@ -1,9 +1,0 @@
-{
-  "version": "1",
-  "name": "Infinite_Vocab_Backend",
-  "type": "collection",
-  "ignore": [
-    "node_modules",
-    ".git"
-  ]
-}
