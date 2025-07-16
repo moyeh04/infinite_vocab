@@ -16,6 +16,10 @@ admin_bp = Blueprint("admin_api", __name__, url_prefix="/api/v1/admin")
 @admin_bp.before_request
 def authentication_before_request():
     """This hook now only ensures a user is authenticated for all admin routes."""
+    # Log the incoming request
+    logger.info(
+        f"REQUEST: {request.method} {request.path} - User: {g.user_id if hasattr(g, 'user_id') else 'anonymous'}"
+    )
     return firebase_token_required()
 
 

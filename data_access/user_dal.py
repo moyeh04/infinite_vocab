@@ -7,10 +7,12 @@ from firebase_admin import firestore
 
 from models import User
 from utils import DatabaseError
+from utils.logging import timed_execution
 
 logger = logging.getLogger("infinite_vocab_app")
 
 
+@timed_execution(logger, "User Creation")
 def create_user(db, user: User) -> User:
     """Saves a new user to Firestore and returns the created user."""
 
@@ -37,10 +39,11 @@ def create_user(db, user: User) -> User:
         return User.model_validate(db_data)
 
     except Exception as e:
-        logger.error(f"DAL: Failed to create user {user.user_id}: {e}")
+        logger.error(f"DAL: Failed to create user {user.user_id}: {e}", exc_info=True)
         raise DatabaseError(f"Failed to create user: {e}") from e
 
 
+@timed_execution(logger, "User Retrieval")
 def get_user_by_id(db, user_id: str) -> Optional[User]:
     """Gets a user from Firestore by their document ID."""
     logger.info(f"DAL: Getting user document for user_id: {user_id}")
@@ -58,10 +61,11 @@ def get_user_by_id(db, user_id: str) -> Optional[User]:
         return User.model_validate(db_data)
 
     except Exception as e:
-        logger.error(f"DAL: Failed to get user by ID {user_id}: {e}")
+        logger.error(f"DAL: Failed to get user by ID {user_id}: {e}", exc_info=True)
         raise DatabaseError(f"Failed to get user by ID: {e}") from e
 
 
+@timed_execution(logger, "User Update")
 def update_user(db, user_id: str, updates: dict) -> Optional[User]:
     """Updates a user document in Firestore."""
     logger.info(
@@ -87,10 +91,11 @@ def update_user(db, user_id: str, updates: dict) -> Optional[User]:
         return User.model_validate(db_data)
 
     except Exception as e:
-        logger.error(f"DAL: Failed to update user {user_id}: {e}")
+        logger.error(f"DAL: Failed to update user {user_id}: {e}", exc_info=True)
         raise DatabaseError(f"Failed to update user: {e}") from e
 
 
+@timed_execution(logger, "User Listing")
 def list_all_users(db) -> list[User]:
     """Retrieves all user documents from the users collection."""
 
@@ -107,10 +112,11 @@ def list_all_users(db) -> list[User]:
         return users
 
     except Exception as e:
-        logger.error(f"DAL: Failed to list all users: {e}")
+        logger.error(f"DAL: Failed to list all users: {e}", exc_info=True)
         raise DatabaseError(f"Failed to list all users: {e}") from e
 
 
+@timed_execution(logger, "User Code Lookup")
 def get_user_by_code(db, user_code: str) -> Optional[User]:
     """Gets a user from Firestore by their unique user_code."""
     logger.info(f"DAL: Getting user by user_code: {user_code}")
@@ -126,10 +132,11 @@ def get_user_by_code(db, user_code: str) -> Optional[User]:
         db_data["user_id"] = doc.id
         return User.model_validate(db_data)
     except Exception as e:
-        logger.error(f"DAL: Failed to get user by code {user_code}: {e}")
+        logger.error(f"DAL: Failed to get user by code {user_code}: {e}", exc_info=True)
         raise DatabaseError(f"Failed to get user by code: {e}") from e
 
 
+@timed_execution(logger, "Leaderboard Query")
 def get_users_for_leaderboard(db, limit: int = 20) -> list[User]:
     """Retrieves a list of users sorted by total_score descending for the leaderboard."""
     logger.info(f"DAL: Getting top {limit} users for leaderboard.")
@@ -149,5 +156,5 @@ def get_users_for_leaderboard(db, limit: int = 20) -> list[User]:
 
         return users
     except Exception as e:
-        logger.error(f"DAL: Failed to list users for leaderboard: {e}")
+        logger.error(f"DAL: Failed to list users for leaderboard: {e}", exc_info=True)
         raise DatabaseError(f"Failed to list users for leaderboard: {e}") from e

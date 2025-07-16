@@ -1,8 +1,14 @@
+import logging
+
 from firebase_admin import firestore
 
 from utils import DatabaseError
+from utils.logging import timed_execution
+
+logger = logging.getLogger("infinite_vocab_app")
 
 
+@timed_execution(logger, "Word Query")
 def _execute_word_query(
     db,
     user_id: str,
@@ -11,6 +17,18 @@ def _execute_word_query(
     limit_count: int = None,
 ):
     try:
+        # Log query parameters at DEBUG level
+        filter_desc = ", ".join(
+            [f"{f}:{op}:{v}" for f, op, v in (additional_filters or [])]
+        )
+        order_desc = (
+            f"{order_by_config[0]}:{order_by_config[1]}" if order_by_config else "none"
+        )
+        logger.debug(
+            f"DAL: Executing query on collection='words' with filters=[user_id={user_id}, {filter_desc}], "
+            f"ordering={order_desc}, limit={limit_count}"
+        )
+
         query = db.collection("words").where(
             filter=firestore.FieldFilter("user_id", "==", user_id)
         )
@@ -27,11 +45,16 @@ def _execute_word_query(
             query = query.limit(limit_count)
 
         snapshots = list(query.stream())
-        # Optional: More generic print or remove if too noisy for a helper
-        # print(f"DAL (_execute_word_query for user {user_id}): Found {len(snapshots)} docs.")
+        # Log query results at DEBUG level
+        logger.debug(
+            f"DAL: Query complete on collection='words' - found {len(snapshots)} documents for user {user_id}"
+        )
         return snapshots
     except Exception as e:
-        print(f"DAL_ERROR: Error in _execute_word_query for user {user_id}: {str(e)}")
+        logger.error(
+            f"DAL: Error in _execute_word_query for user {user_id}: {str(e)}",
+            exc_info=True,
+        )
         raise DatabaseError(
             f"DAL: Firestore error during word query execution: {str(e)}"
         ) from e
@@ -46,7 +69,7 @@ def find_word_by_text_for_user(db, user_id: str, word_text: str):
         text already exists for the specified user, primarily for duplicate prevention.
         It calls the generic _execute_word_query with a limit of 1.
     """
-    print(f"DAL: Finding word by text '{word_text}' for user {user_id}")
+    logger.info(f"DAL: Finding word by text '{word_text}' for user {user_id}")
     filters = [("word_text", "==", word_text)]
     return _execute_word_query(db, user_id, additional_filters=filters, limit_count=1)
 
@@ -56,12 +79,14 @@ def get_word_by_id(db, word_id):
     # We skip ownership checks here since this isn't a transaction.
     # It's more of a service layer's job.
     try:
-        print(f"DAL: Attempting to fetch word by ID: '{word_id}'")
+        logger.info(f"DAL: Attempting to fetch word by ID: '{word_id}'")
         doc_ref = db.collection("words").document(word_id)
         snapshot = doc_ref.get()
         return snapshot
     except Exception as e:
-        print(f"DAL_ERROR: Error fetching word by ID '{word_id}': {str(e)}")
+        logger.error(
+            f"DAL: Error fetching word by ID '{word_id}': {str(e)}", exc_info=True
+        )
         raise DatabaseError(
             f"DAL: Firestore error fetching word by ID '{word_id}': {str(e)}"
         ) from e
@@ -79,11 +104,12 @@ def update_word_by_id(db, word_id, new_word_text):
             "updatedAt": firestore.SERVER_TIMESTAMP,
         }
         word_ref.update(data_to_update)
-        print(f"DAL: Updated word text for ID '{word_id}' to '{new_word_text}'")
+        logger.info(f"DAL: Updated word text for ID '{word_id}' to '{new_word_text}'")
         return True
     except Exception as e:
-        print(
-            f"DAL_ERROR: Error updating word text for ID '{word_id}' to '{new_word_text}': {str(e)}"
+        logger.error(
+            f"DAL: Error updating word text for ID '{word_id}' to '{new_word_text}': {str(e)}",
+            exc_info=True,
         )
         raise DatabaseError(
             f"DAL: Firestore error updating word text for ID '{word_id}' to '{new_word_text}': {str(e)}"
@@ -108,10 +134,12 @@ def delete_word_by_id(db, word_id: str):
 
         _ = db.collection("words").document(word_id).delete()
 
-        print(f"DAL: Successfully deleted word with ID '{word_id}'")
+        logger.info(f"DAL: Successfully deleted word with ID '{word_id}'")
         return True
     except Exception as e:
-        print(f"DAL_ERROR: Error deleting word ID '{word_id}': {str(e)}")
+        logger.error(
+            f"DAL: Error deleting word ID '{word_id}': {str(e)}", exc_info=True
+        )
         raise DatabaseError(
             f"DAL: Firestore error deleting word ID '{word_id}': {str(e)}"
         ) from e
@@ -119,7 +147,7 @@ def delete_word_by_id(db, word_id: str):
 
 def get_all_words_for_user_sorted_by_stars(db, user_id: str):
     """Gets all words for a user, sorted by word_stars descending."""
-    print(f"DAL: Getting all words for user {user_id}, sorted by word_stars")
+    logger.info(f"DAL: Getting all words for user {user_id}, sorted by word_stars")
     order_config = ("word_stars", "DESCENDING")
     return _execute_word_query(db, user_id, order_by_config=order_config)
 
@@ -127,10 +155,12 @@ def get_all_words_for_user_sorted_by_stars(db, user_id: str):
 def add_word_to_db(db, data_to_save: dict):
     try:
         timestamp, doc_ref = db.collection("words").add(data_to_save)
-        print(f"DAL: Word added to Firestore with ID: {doc_ref.id}")
+        logger.info(f"DAL: Word added to Firestore with ID: {doc_ref.id}")
         return timestamp, doc_ref
     except Exception as e:
-        print(f"DAL_ERROR: Failed to add word data to Firestore: {str(e)}")
+        logger.error(
+            f"DAL: Failed to add word data to Firestore: {str(e)}", exc_info=True
+        )
         raise DatabaseError(f"DAL: Firestore error while adding word: {str(e)}") from e
 
 
@@ -143,12 +173,15 @@ def append_description_to_word_db(db, word_id: str, description_data: dict):
             .collection("descriptions")
             .add(description_data)
         )
-        print(
+        logger.info(
             f"DAL: New description added with ID {new_description_ref.id} to word '{word_id}'"
         )
         return new_description_ref
     except Exception as e:
-        print(f"DAL_ERROR: Failed to append description to word '{word_id}': {str(e)}")
+        logger.error(
+            f"DAL: Failed to append description to word '{word_id}': {str(e)}",
+            exc_info=True,
+        )
         raise DatabaseError(
             f"DAL: Could not add description for word '{word_id}' due to Firestore error."
         ) from e
@@ -170,13 +203,14 @@ def update_description_to_word_db(
             "updatedAt": firestore.SERVER_TIMESTAMP,
         }
         description_ref.update(data_to_update)
-        print(
+        logger.info(
             f"DAL: Updated description text for ID '{description_id}' in word '{word_id}' to '{description_text}'"
         )
         return True
     except Exception as e:
-        print(
-            f"DAL_ERROR: Error updating description text for ID '{description_id}' in word '{word_id}': {str(e)}"
+        logger.error(
+            f"DAL: Error updating description text for ID '{description_id}' in word '{word_id}': {str(e)}",
+            exc_info=True,
         )
         raise DatabaseError(
             f"DAL: Firestore error updating description text for ID '{description_id}' in word '{word_id}': {str(e)}"
@@ -196,13 +230,14 @@ def delete_description_from_word_db(db, word_id: str, description_id: str):
             .document(description_id)
         )
         description_ref.delete()
-        print(
+        logger.info(
             f"DAL: Successfully deleted description with ID '{description_id}' from word '{word_id}'"
         )
         return True
     except Exception as e:
-        print(
-            f"DAL_ERROR: Error deleting description ID '{description_id}' from word '{word_id}': {str(e)}"
+        logger.error(
+            f"DAL: Error deleting description ID '{description_id}' from word '{word_id}': {str(e)}",
+            exc_info=True,
         )
         raise DatabaseError(
             f"DAL: Firestore error deleting description ID '{description_id}' from word '{word_id}': {str(e)}"
@@ -212,7 +247,7 @@ def delete_description_from_word_db(db, word_id: str, description_id: str):
 def get_description_by_id(db, word_id: str, description_id: str):
     """Fetches a single description document from a word's descriptions subcollection by its ID."""
     try:
-        print(
+        logger.info(
             f"DAL: Attempting to fetch description by ID: '{description_id}' from word '{word_id}'"
         )
         description_ref = (
@@ -224,8 +259,9 @@ def get_description_by_id(db, word_id: str, description_id: str):
         snapshot = description_ref.get()
         return snapshot
     except Exception as e:
-        print(
-            f"DAL_ERROR: Error fetching description by ID '{description_id}' from word '{word_id}': {str(e)}"
+        logger.error(
+            f"DAL: Error fetching description by ID '{description_id}' from word '{word_id}': {str(e)}",
+            exc_info=True,
         )
         raise DatabaseError(
             f"DAL: Firestore error fetching description by ID '{description_id}' from word '{word_id}': {str(e)}"
@@ -246,13 +282,14 @@ def update_example_to_word_db(db, word_id: str, example_id: str, example_text: s
             "updatedAt": firestore.SERVER_TIMESTAMP,
         }
         example_ref.update(data_to_update)
-        print(
+        logger.info(
             f"DAL: Updated example text for ID '{example_id}' in word '{word_id}' to '{example_text}'"
         )
         return True
     except Exception as e:
-        print(
-            f"DAL_ERROR: Error updating example text for ID '{example_id}' in word '{word_id}': {str(e)}"
+        logger.error(
+            f"DAL: Error updating example text for ID '{example_id}' in word '{word_id}': {str(e)}",
+            exc_info=True,
         )
         raise DatabaseError(
             f"DAL: Firestore error updating example text for ID '{example_id}' in word '{word_id}': {str(e)}"
@@ -272,13 +309,14 @@ def delete_example_from_word_db(db, word_id: str, example_id: str):
             .document(example_id)
         )
         example_ref.delete()
-        print(
+        logger.info(
             f"DAL: Successfully deleted example with ID '{example_id}' from word '{word_id}'"
         )
         return True
     except Exception as e:
-        print(
-            f"DAL_ERROR: Error deleting example ID '{example_id}' from word '{word_id}': {str(e)}"
+        logger.error(
+            f"DAL: Error deleting example ID '{example_id}' from word '{word_id}': {str(e)}",
+            exc_info=True,
         )
         raise DatabaseError(
             f"DAL: Firestore error deleting example ID '{example_id}' from word '{word_id}': {str(e)}"
@@ -288,7 +326,7 @@ def delete_example_from_word_db(db, word_id: str, example_id: str):
 def get_example_by_id(db, word_id: str, example_id: str):
     """Fetches a single example document from a word's examples subcollection by its ID."""
     try:
-        print(
+        logger.info(
             f"DAL: Attempting to fetch example by ID: '{example_id}' from word '{word_id}'"
         )
         example_ref = (
@@ -300,8 +338,9 @@ def get_example_by_id(db, word_id: str, example_id: str):
         snapshot = example_ref.get()
         return snapshot
     except Exception as e:
-        print(
-            f"DAL_ERROR: Error fetching example by ID '{example_id}' from word '{word_id}': {str(e)}"
+        logger.error(
+            f"DAL: Error fetching example by ID '{example_id}' from word '{word_id}': {str(e)}",
+            exc_info=True,
         )
         raise DatabaseError(
             f"DAL: Firestore error fetching example by ID '{example_id}' from word '{word_id}': {str(e)}"
@@ -317,12 +356,15 @@ def append_example_to_word_db(db, word_id: str, example_data: dict):
             .collection("examples")
             .add(example_data)
         )
-        print(
+        logger.info(
             f"DAL: New example added with ID {new_example_ref.id} to word '{word_id}'"
         )
         return new_example_ref
     except Exception as e:
-        print(f"DAL_ERROR: Failed to append example to word '{word_id}': {str(e)}")
+        logger.error(
+            f"DAL: Failed to append example to word '{word_id}': {str(e)}",
+            exc_info=True,
+        )
         raise DatabaseError(
             f"DAL: Could not add example for word '{word_id}' due to Firestore error."
         ) from e
@@ -346,9 +388,15 @@ def get_all_descriptions_for_word(db, word_id: str) -> list:
                 description_data = desc_snap.to_dict()
                 description_data["description_id"] = desc_snap.id
                 descriptions_list.append(description_data)
+        logger.info(
+            f"DAL: Retrieved {len(descriptions_list)} descriptions for word '{word_id}'"
+        )
         return descriptions_list
     except Exception as e:
-        print(f"DAL_ERROR: Failed to get descriptions for word '{word_id}': {str(e)}")
+        logger.error(
+            f"DAL: Failed to get descriptions for word '{word_id}': {str(e)}",
+            exc_info=True,
+        )
         raise DatabaseError(
             f"DAL: Could not retrieve descriptions for word '{word_id}' due to Firestore error: {str(e)}"
         ) from e
@@ -369,17 +417,26 @@ def get_all_examples_for_word(db, word_id: str) -> list:
                 example_data = example_snap.to_dict()
                 example_data["example_id"] = example_snap.id
                 examples_list.append(example_data)
+        logger.info(
+            f"DAL: Retrieved {len(examples_list)} examples for word '{word_id}'"
+        )
         return examples_list
     except Exception as e:
-        print(f"DAL_ERROR: Failed to get examples for word '{word_id}': {str(e)}")
+        logger.error(
+            f"DAL: Failed to get examples for word '{word_id}': {str(e)}", exc_info=True
+        )
         raise DatabaseError(
             f"DAL: Could not retrieve examples for word '{word_id}' due to Firestore error: {str(e)}"
         ) from e
 
 
 @firestore.transactional
+@timed_execution(logger, "Word Star Transaction")
 def atomic_update(transaction, db, word_id, user_id):
     try:
+        logger.debug(
+            f"DAL: Starting transaction for starring word '{word_id}' by user '{user_id}'"
+        )
         # Read
         word_doc_ref = db.collection("words").document(word_id)
         snapshot = word_doc_ref.get(transaction=transaction)
@@ -406,8 +463,9 @@ def atomic_update(transaction, db, word_id, user_id):
         )
         return (new_star_count, word_text)
     except Exception as e:
-        print(
-            f"DAL_ERROR: Error starring words for user {user_id}, word '{word_text}': {str(e)}"
+        logger.error(
+            f"DAL: Error starring words for user {user_id}, word '{word_text}': {str(e)}",
+            exc_info=True,
         )
         raise DatabaseError(
             f"DAL: Firestore error while querying words: {str(e)}"

@@ -35,7 +35,8 @@ def create_category(db, user_id: str, schema: CategoryCreateSchema) -> Category:
         return created_category
     except DatabaseError as e:
         logger.error(
-            f"SERVICE: DatabaseError during category creation for user '{user_id}': {e}"
+            f"SERVICE: DatabaseError during category creation for user '{user_id}': {e}",
+            exc_info=True,
         )
         raise CategoryServiceError(
             f"Could not create category '{schema.category_name}' due to a database issue."
@@ -56,7 +57,8 @@ def get_categories_by_user(db, user_id: str) -> List[Category]:
         return categories
     except DatabaseError as e:
         logger.error(
-            f"SERVICE: DatabaseError during category retrieval for user '{user_id}': {e}"
+            f"SERVICE: DatabaseError during category retrieval for user '{user_id}': {e}",
+            exc_info=True,
         )
         raise CategoryServiceError(
             "Could not retrieve categories due to a database issue."
@@ -80,7 +82,8 @@ def get_category_by_id(db, category_id: str, user_id: str) -> Category:
         return category
     except DatabaseError as e:
         logger.error(
-            f"SERVICE: DatabaseError during get_category_by_id for '{category_id}': {e}"
+            f"SERVICE: DatabaseError during get_category_by_id for '{category_id}': {e}",
+            exc_info=True,
         )
         raise CategoryServiceError(
             "Could not retrieve category due to a database issue."
@@ -120,7 +123,8 @@ def update_category(
         raise
     except DatabaseError as e:
         logger.error(
-            f"SERVICE: DatabaseError during category update for '{category_id}': {e}"
+            f"SERVICE: DatabaseError during category update for '{category_id}': {e}",
+            exc_info=True,
         )
         raise CategoryServiceError(
             "Could not update category due to a database issue."
@@ -143,7 +147,8 @@ def delete_category(db, category_id: str, user_id: str) -> None:
         raise
     except DatabaseError as e:
         logger.error(
-            f"SERVICE: DatabaseError during category deletion for '{category_id}': {e}"
+            f"SERVICE: DatabaseError during category deletion for '{category_id}': {e}",
+            exc_info=True,
         )
         raise CategoryServiceError(
             "Could not delete category due to a database issue."

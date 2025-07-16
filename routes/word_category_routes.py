@@ -19,6 +19,10 @@ word_category_bp = Blueprint(
 @word_category_bp.before_request
 def authentication_before_request():
     """Apply Firebase token authentication to all routes in this blueprint."""
+    # Log the incoming request
+    logger.info(
+        f"REQUEST: {request.method} {request.path} - User: {g.user_id if hasattr(g, 'user_id') else 'anonymous'}"
+    )
     return firebase_token_required()
 
 

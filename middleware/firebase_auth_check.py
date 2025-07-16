@@ -15,7 +15,7 @@ def firebase_token_required():
     """A standard function to be used in `before_request` hooks."""
     auth_header = request.headers.get("Authorization")
     if not auth_header or not auth_header.startswith("Bearer "):
-        logger.warning("AUTH_FAILURE: Authorization header missing or invalid.")
+        logger.warning("AUTH: Authorization header missing or invalid.")
 
         return error_response("Authorization header missing or invalid format", 401)
     try:
@@ -23,10 +23,10 @@ def firebase_token_required():
         decoded_token = auth.verify_id_token(id_token)
         g.user_id = decoded_token["uid"]
         g.db = firestore.client()
-        logger.info(f"AUTH_SUCCESS: Token verified for user_id: {g.user_id}")
+        logger.info(f"AUTH: Token verified for user_id: {g.user_id}")
 
     except Exception as e:
-        logger.error(f"AUTH_FAILURE: Error verifying Firebase ID token: {e}")
+        logger.error(f"AUTH: Error verifying Firebase ID token: {e}", exc_info=True)
         return error_response("Invalid or expired authentication token", 401)
 
 
@@ -38,7 +38,8 @@ def admin_required(f):
         # This check assumes firebase_token_required has already run and set g.user_id
         if not hasattr(g, "user_id"):
             logger.error(
-                "ADMIN_CHECK_FAILURE: admin_required used without a user token."
+                "AUTH: Admin check failed - admin_required used without a user token.",
+                exc_info=True,
             )
             return error_response("Authentication token is required.", 401)
 
@@ -46,17 +47,16 @@ def admin_required(f):
             admin_doc = g.db.collection("admins").document(g.user_id).get()
             if not admin_doc.exists:
                 logger.warning(
-                    f"ADMIN_CHECK_FAILURE: User {g.user_id} is not an admin."
+                    f"AUTH: Admin check failed - User {g.user_id} is not an admin."
                 )
                 return error_response("Forbidden: Admin privileges are required.", 403)
 
             g.admin_role = admin_doc.to_dict().get("role", "admin")
-            logger.info(
-                f"ADMIN_CHECK_SUCCESS: User {g.user_id} is an admin with role: {g.admin_role}"
-            )
+            logger.info(f"AUTH: User {g.user_id} is an admin with role: {g.admin_role}")
         except Exception as e:
             logger.error(
-                f"ADMIN_CHECK_FAILURE: DB error checking admin status for user {g.user_id}: {e}"
+                f"AUTH: DB error checking admin status for user {g.user_id}: {e}",
+                exc_info=True,
             )
             return error_response(
                 "An internal error occurred while verifying permissions.", 500
@@ -75,22 +75,21 @@ def super_admin_required(f):
         # This decorator should be stacked on top of @admin_required, so g.admin_role will exist.
         if not hasattr(g, "admin_role"):
             logger.error(
-                "SUPER_ADMIN_CHECK_FAILURE: super_admin_required called out of order."
+                "AUTH: Super admin check failed - super_admin_required called out of order.",
+                exc_info=True,
             )
             # This is a fallback, but the main check in admin_required should have caught it.
             return error_response("Forbidden: Admin privileges are required.", 403)
 
         if g.admin_role != "super-admin":
             logger.warning(
-                f"SUPER_ADMIN_CHECK_FAILURE: User {g.user_id} has role '{g.admin_role}', but 'super-admin' is required."
+                f"AUTH: Super admin check failed - User {g.user_id} has role '{g.admin_role}', but 'super-admin' is required."
             )
             return error_response(
                 "Forbidden: Super-admin privileges are required for this action.", 403
             )
 
-        logger.info(
-            f"SUPER_ADMIN_CHECK_SUCCESS: User {g.user_id} verified as super-admin."
-        )
+        logger.info(f"AUTH: User {g.user_id} verified as super-admin.")
         return f(*args, **kwargs)
 
     return decorated_function
