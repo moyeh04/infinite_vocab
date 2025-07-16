@@ -15,6 +15,8 @@ category_bp = Blueprint("category", __name__, url_prefix="/api/v1/categories")
 
 @category_bp.before_request
 def authenticate_before_request():
+    # Log request BEFORE authentication
+    logger.info(f"REQUEST: {request.method} {request.path}")
     return firebase_token_required()
 
 
@@ -30,7 +32,9 @@ def create_category_route():
             f"ROUTE: Successfully created category '{category.category_id}' for user_id: {g.user_id}"
         )
 
-        return jsonify(category.model_dump(by_alias=True)), 201
+        response = jsonify(category.model_dump(by_alias=True)), 201
+        logger.info(f"RESPONSE: {request.path} - Status: 201")
+        return response
     except CategoryServiceError as e:
         logger.warning(
             f"ROUTE: Business rule violation for user {g.user_id} creating category: {e}"

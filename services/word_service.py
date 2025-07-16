@@ -1,3 +1,4 @@
+import logging
 from firebase_admin import firestore
 
 from data_access import word_dal as wd
@@ -8,6 +9,8 @@ from utils import (
     NotFoundError,
     WordServiceError,
 )
+
+logger = logging.getLogger("infinite_vocab_app")
 
 
 def _get_word_existence_details(db, user_id: str, word_text: str) -> dict:
@@ -30,15 +33,16 @@ def _get_word_existence_details(db, user_id: str, word_text: str) -> dict:
         else:
             return {"exists": False, "word_id": None}
     except DatabaseError as de:
-        print(
-            f"WordService (helper): DatabaseError during existence check for word '{word_text}', user '{user_id}': {str(de)}"
+        logger.error(
+            f"SERVICE: DatabaseError during existence check for word '{word_text}', user '{user_id}': {str(de)}"
         )
         raise WordServiceError(
             f"Could not check existence for word '{word_text}' due to a database issue."
         ) from de
     except Exception as e:
-        print(
-            f"WordService (helper): Unexpected error during existence check for word '{word_text}', user '{user_id}': {str(e)}"
+        logger.error(
+            f"SERVICE: Unexpected error during existence check for word '{word_text}', user '{user_id}': {str(e)}",
+            exc_info=True,
         )
         raise WordServiceError(
             f"An unexpected error occurred while checking existence for word '{word_text}'."
@@ -82,15 +86,16 @@ def _get_and_verify_word_ownership(
     except NotFoundError:
         raise
     except DatabaseError as de:
-        print(
-            f"WordService (helper): DatabaseError for word_id '{word_id}', user '{user_id}': {str(de)}"
+        logger.error(
+            f"SERVICE: DatabaseError for word_id '{word_id}', user '{user_id}': {str(de)}"
         )
         raise WordServiceError(
             "Could not retrieve word due to a data access issue."
         ) from de
     except Exception as e:
-        print(
-            f"WordService (helper): Unexpected error for word_id '{word_id}', user '{user_id}': {str(e)}"
+        logger.error(
+            f"SERVICE: Unexpected error for word_id '{word_id}', user '{user_id}': {str(e)}",
+            exc_info=True,
         )
         raise WordServiceError(
             "An unexpected service error occurred while verifying word."
@@ -117,8 +122,8 @@ def create_word_for_user(
 
         if existence_details["exists"]:
             existing_doc_id = existence_details["word_id"]
-            print(
-                f"WordService: Duplicate found: Word '{word_text_to_add}' for user '{user_id}' (ID: {existing_doc_id})."
+            logger.warning(
+                f"SERVICE: Duplicate found: Word '{word_text_to_add}' for user '{user_id}' (ID: {existing_doc_id})."
             )
             raise DuplicateEntryError(
                 f"Word '{word_text_to_add}' already exists in your list. Try adding a star to the existing entry instead?",
@@ -138,8 +143,8 @@ def create_word_for_user(
         _timestamp, new_word_ref = wd.add_word_to_db(db, word_document_data)
         created_word_id = new_word_ref.id
 
-        print(
-            f"WordService: Word '{word_text_to_add}' added with ID: {created_word_id} for user '{user_id}'."
+        logger.info(
+            f"SERVICE: Word '{word_text_to_add}' added with ID: {created_word_id} for user '{user_id}'."
         )
 
         # 3. Add the initial description to its 'descriptions' subcollection
@@ -207,15 +212,16 @@ def create_word_for_user(
     except WordServiceError:
         raise
     except DatabaseError as de:
-        print(
-            f"WordService: Unwrapped DatabaseError in create_word_for_user for '{word_text_to_add}', user_id '{user_id}': {str(de)}"
+        logger.error(
+            f"SERVICE: DatabaseError in create_word_for_user for '{word_text_to_add}', user_id '{user_id}': {str(de)}"
         )
         raise WordServiceError(
             "A database problem occurred while creating your word."
         ) from de
     except Exception as e:
-        print(
-            f"WordService: Unexpected error in create_word_for_user for '{word_text_to_add}', user_id '{user_id}': {str(e)}"
+        logger.error(
+            f"SERVICE: Unexpected error in create_word_for_user for '{word_text_to_add}', user_id '{user_id}': {str(e)}",
+            exc_info=True,
         )
         raise WordServiceError(
             "An unexpected error occurred in the word service while creating your word."
@@ -233,8 +239,9 @@ def check_word_exists(db, user_id: str, word_text: str) -> dict:
     except WordServiceError:
         raise
     except Exception as e:
-        print(
-            f"WordService: Unexpected error in check_word_exists_service for word '{word_text}', user_id '{user_id}': {str(e)}"
+        logger.error(
+            f"SERVICE: Unexpected error in check_word_exists_service for word '{word_text}', user_id '{user_id}': {str(e)}",
+            exc_info=True,
         )
         raise WordServiceError(
             "An unexpected error occurred while checking word existence."
@@ -275,8 +282,8 @@ def update_word_for_user(db, user_id: str, word_id: str, new_word_text: str) -> 
         )
         # Note: old_word_data['word_text'] would still have the old text.
         # new_word_data_with_id['word_text'] will have the new_word_text.
-        print(
-            f"WordService: Word ID '{word_id}' text updated from '{old_word_data.get('word_text')}' to '{new_word_data.get('word_text')}' for user '{user_id}'."
+        logger.info(
+            f"SERVICE: Word ID '{word_id}' text updated from '{old_word_data.get('word_text')}' to '{new_word_data.get('word_text')}' for user '{user_id}'."
         )
         return {
             "message": f"Word '{old_word_data.get('word_text', word_id)}' successfully updated to '{new_word_data.get('word_text')}'.",
@@ -286,15 +293,16 @@ def update_word_for_user(db, user_id: str, word_id: str, new_word_text: str) -> 
     except NotFoundError:
         raise
     except DatabaseError as de:
-        print(
-            f"WordService: DatabaseError updating text for word '{word_id}', user '{user_id}': {str(de)}"
+        logger.error(
+            f"SERVICE: DatabaseError updating text for word '{word_id}', user '{user_id}': {str(de)}"
         )
         raise WordServiceError(
             "Could not update word text due to a data access issue."
         ) from de
     except Exception as e:
-        print(
-            f"WordService: Unexpected error updating text for word '{word_id}', user '{user_id}': {str(e)}"
+        logger.error(
+            f"SERVICE: Unexpected error updating text for word '{word_id}', user '{user_id}': {str(e)}",
+            exc_info=True,
         )
         raise WordServiceError(
             "An unexpected service error occurred while updating word text."
@@ -313,8 +321,8 @@ def delete_word_for_user(db, user_id: str, word_id: str) -> dict:
         )
 
         wd.delete_word_by_id(db, word_id)
-        print(
-            f"WordService: Word ID '{word_id}' (text: '{word_to_delete_data['word_text']}') deleted for user '{user_id}'."
+        logger.info(
+            f"SERVICE: Word ID '{word_id}' (text: '{word_to_delete_data['word_text']}') deleted for user '{user_id}'."
         )
 
         return {
@@ -324,15 +332,16 @@ def delete_word_for_user(db, user_id: str, word_id: str) -> dict:
     except NotFoundError:
         raise
     except DatabaseError as de:
-        print(
-            f"WordService: DatabaseError deleting word '{word_id}' for user '{user_id}': {str(de)}"
+        logger.error(
+            f"SERVICE: DatabaseError deleting word '{word_id}' for user '{user_id}': {str(de)}"
         )
         raise WordServiceError(
             "Could not delete word due to a data access issue."
         ) from de
     except Exception as e:
-        print(
-            f"WordService: Unexpected error deleting word '{word_id}' for user '{user_id}': {str(e)}"
+        logger.error(
+            f"SERVICE: Unexpected error deleting word '{word_id}' for user '{user_id}': {str(e)}",
+            exc_info=True,
         )
         raise WordServiceError(
             "An unexpected service error occurred while deleting word."
@@ -351,21 +360,22 @@ def list_words_for_user(db, user_id):
             word_data["examples"] = wd.get_all_examples_for_word(db, word_id)
 
             results_list.append(word_data)
-        print(
-            f"WordService: Prepared results_list with {len(results_list)} items for user {user_id}."
+        logger.info(
+            f"SERVICE: Prepared results_list with {len(results_list)} items for user {user_id}."
         )
-        # print(f"WordService: Full results_list: {results_list} for user {user_id}.") # Optional: very verbose for many words
+        # logger.debug(f"SERVICE: Full results_list: {results_list} for user {user_id}.") # Optional: very verbose for many words
         return results_list
     except DatabaseError as de:
-        print(
-            f"WordService: DatabaseError encountered while listing words for user {user_id}: {str(de)}"
+        logger.error(
+            f"SERVICE: DatabaseError encountered while listing words for user {user_id}: {str(de)}"
         )
         raise WordServiceError(
             "A database problem occurred while fetching your words."
         ) from de
     except Exception as e:
-        print(
-            f"WordService: Unexpected error in list_words_for_user for user {user_id}: {str(e)}"
+        logger.error(
+            f"SERVICE: Unexpected error in list_words_for_user for user {user_id}: {str(e)}",
+            exc_info=True,
         )
         raise WordServiceError(
             "An unexpected service error occurred while fetching your words."
@@ -409,15 +419,16 @@ def add_description_for_user(
     except NotFoundError:
         raise
     except DatabaseError as de:
-        print(
-            f"WordService: DatabaseError adding description to word '{word_id}': {str(de)}"
+        logger.error(
+            f"SERVICE: DatabaseError adding description to word '{word_id}': {str(de)}"
         )
         raise WordServiceError(
             "Could not add description due to a data access issue."
         ) from de
     except Exception as e:
-        print(
-            f"WordService: Unexpected error adding description to word '{word_id}': {str(e)}"
+        logger.error(
+            f"SERVICE: Unexpected error adding description to word '{word_id}': {str(e)}",
+            exc_info=True,
         )
         raise WordServiceError(
             "An unexpected service error occurred while adding description."
@@ -456,8 +467,8 @@ def update_description_for_user(
         # Update the description
         wd.update_description_to_word_db(db, word_id, description_id, description_text)
 
-        print(
-            f"WordService: Description ID '{description_id}' text updated from '{old_description_text}' to '{description_text}' for user '{user_id}'"
+        logger.info(
+            f"SERVICE: Description ID '{description_id}' text updated from '{old_description_text}' to '{description_text}' for user '{user_id}'"
         )
         return {
             "message": f"Description '{old_description_text}' successfully updated to '{description_text}'.",
@@ -467,15 +478,16 @@ def update_description_for_user(
     except NotFoundError:
         raise
     except DatabaseError as de:
-        print(
-            f"WordService: DatabaseError updating description '{description_id}' in word '{word_id}': {str(de)}"
+        logger.error(
+            f"SERVICE: DatabaseError updating description '{description_id}' in word '{word_id}': {str(de)}"
         )
         raise WordServiceError(
             "Could not update description due to a data access issue."
         ) from de
     except Exception as e:
-        print(
-            f"WordService: Unexpected error updating description '{description_id}' in word '{word_id}': {str(e)}"
+        logger.error(
+            f"SERVICE: Unexpected error updating description '{description_id}' in word '{word_id}': {str(e)}",
+            exc_info=True,
         )
         raise WordServiceError(
             "An unexpected service error occurred while updating description."
@@ -508,8 +520,8 @@ def delete_description_for_user(db, user_id: str, word_id: str, description_id: 
         # Delete the description
         wd.delete_description_from_word_db(db, word_id, description_id)
 
-        print(
-            f"WordService: Description ID '{description_id}' deleted from word '{word_id}' for user '{user_id}'"
+        logger.info(
+            f"SERVICE: Description ID '{description_id}' deleted from word '{word_id}' for user '{user_id}'"
         )
         return {
             "message": f"Description deleted successfully from word '{word_id}'.",
@@ -519,15 +531,16 @@ def delete_description_for_user(db, user_id: str, word_id: str, description_id: 
     except NotFoundError:
         raise
     except DatabaseError as de:
-        print(
-            f"WordService: DatabaseError deleting description '{description_id}' from word '{word_id}': {str(de)}"
+        logger.error(
+            f"SERVICE: DatabaseError deleting description '{description_id}' from word '{word_id}': {str(de)}"
         )
         raise WordServiceError(
             "Could not delete description due to a data access issue."
         ) from de
     except Exception as e:
-        print(
-            f"WordService: Unexpected error deleting description '{description_id}' from word '{word_id}': {str(e)}"
+        logger.error(
+            f"SERVICE: Unexpected error deleting description '{description_id}' from word '{word_id}': {str(e)}",
+            exc_info=True,
         )
         raise WordServiceError(
             "An unexpected service error occurred while deleting description."
@@ -564,8 +577,8 @@ def update_example_for_user(
         # Update the example
         wd.update_example_to_word_db(db, word_id, example_id, example_text)
 
-        print(
-            f"WordService: Example ID '{example_id}' text updated from '{old_example_text}' to '{example_text}' for user '{user_id}'"
+        logger.info(
+            f"SERVICE: Example ID '{example_id}' text updated from '{old_example_text}' to '{example_text}' for user '{user_id}'"
         )
         return {
             "message": f"Example '{old_example_text}' successfully updated to '{example_text}'.",
@@ -575,15 +588,16 @@ def update_example_for_user(
     except NotFoundError:
         raise
     except DatabaseError as de:
-        print(
-            f"WordService: DatabaseError updating example '{example_id}' in word '{word_id}': {str(de)}"
+        logger.error(
+            f"SERVICE: DatabaseError updating example '{example_id}' in word '{word_id}': {str(de)}"
         )
         raise WordServiceError(
             "Could not update example due to a data access issue."
         ) from de
     except Exception as e:
-        print(
-            f"WordService: Unexpected error updating example '{example_id}' in word '{word_id}': {str(e)}"
+        logger.error(
+            f"SERVICE: Unexpected error updating example '{example_id}' in word '{word_id}': {str(e)}",
+            exc_info=True,
         )
         raise WordServiceError(
             "An unexpected service error occurred while updating example."
@@ -616,8 +630,8 @@ def delete_example_for_user(db, user_id: str, word_id: str, example_id: str):
         # Delete the example
         wd.delete_example_from_word_db(db, word_id, example_id)
 
-        print(
-            f"WordService: Example ID '{example_id}' deleted from word '{word_id}' for user '{user_id}'"
+        logger.info(
+            f"SERVICE: Example ID '{example_id}' deleted from word '{word_id}' for user '{user_id}'"
         )
         return {
             "message": f"Example deleted successfully from word '{word_id}'.",
@@ -627,15 +641,16 @@ def delete_example_for_user(db, user_id: str, word_id: str, example_id: str):
     except NotFoundError:
         raise
     except DatabaseError as de:
-        print(
-            f"WordService: DatabaseError deleting example '{example_id}' from word '{word_id}': {str(de)}"
+        logger.error(
+            f"SERVICE: DatabaseError deleting example '{example_id}' from word '{word_id}': {str(de)}"
         )
         raise WordServiceError(
             "Could not delete example due to a data access issue."
         ) from de
     except Exception as e:
-        print(
-            f"WordService: Unexpected error deleting example '{example_id}' from word '{word_id}': {str(e)}"
+        logger.error(
+            f"SERVICE: Unexpected error deleting example '{example_id}' from word '{word_id}': {str(e)}",
+            exc_info=True,
         )
         raise WordServiceError(
             "An unexpected service error occurred while deleting example."
@@ -669,6 +684,9 @@ def add_example_for_user(
         new_example_ref = wd.append_example_to_word_db(db, word_id, example_data)
         new_example_id = new_example_ref.id
 
+        logger.info(
+            f"SERVICE: Example added successfully to word '{word_id}' for user '{user_id}'"
+        )
         return {
             "message": f"Example added successfully to word '{word_id}'.",
             "word_id": word_id,
@@ -677,15 +695,16 @@ def add_example_for_user(
     except NotFoundError:
         raise
     except DatabaseError as de:
-        print(
-            f"WordService: DatabaseError adding example to word '{word_id}': {str(de)}"
+        logger.error(
+            f"SERVICE: DatabaseError adding example to word '{word_id}': {str(de)}"
         )
         raise WordServiceError(
             "Could not add example due to a data access issue."
         ) from de
     except Exception as e:
-        print(
-            f"WordService: Unexpected error adding example to word '{word_id}': {str(e)}"
+        logger.error(
+            f"SERVICE: Unexpected error adding example to word '{word_id}': {str(e)}",
+            exc_info=True,
         )
         raise WordServiceError(
             "An unexpected service error occurred while adding example."
@@ -726,8 +745,8 @@ def star_word_for_user(db, user_id, word_id):
         if new_star_count in example_milestones:
             prompt_for_example = True
 
-        print(
-            f"STAR_WORD: Star updated for word ID '{word_id}' (text: '{word_text}') for user_id: {user_id}. New stars: {new_star_count}"
+        logger.info(
+            f"SERVICE: Star updated for word ID '{word_id}' (text: '{word_text}') for user_id: {user_id}. New stars: {new_star_count}"
         )
         return {
             "message": f"Successfully starred word '{word_text}'.",
@@ -739,15 +758,16 @@ def star_word_for_user(db, user_id, word_id):
     except (NotFoundError, ForbiddenError):
         raise
     except DatabaseError as de:
-        print(
-            f"WordService: DatabaseError starring word ID '{word_id}' (text: '{word_text}'): {str(de)}"
+        logger.error(
+            f"SERVICE: DatabaseError starring word ID '{word_id}' (text: '{word_text}'): {str(de)}"
         )
         raise WordServiceError(
             "A database problem occurred while starring the word."
         ) from de
     except Exception as e:
-        print(
-            f"WordService: Unexpected error starring word ID '{word_id}' (text: '{word_text}'): {str(e)}"
+        logger.error(
+            f"SERVICE: Unexpected error starring word ID '{word_id}' (text: '{word_text}'): {str(e)}",
+            exc_info=True,
         )
         raise WordServiceError(
             "An unexpected service error occurred while starring the word."

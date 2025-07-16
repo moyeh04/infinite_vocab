@@ -4,22 +4,36 @@ This document outlines the known technical debt and potential areas for improvem
 
 ## 🟥 High Priority: Core Architectural Refactor
 
-The single most impactful improvement is to align the entire application on the "Modern" Pydantic-based architecture.
+**Critical Issue**: The application currently has two conflicting architectural patterns that create maintenance overhead and inconsistent developer experience.
 
-- [ ] **Migrate the `words` Module to the Modern Architecture**
-  - The `words` feature currently uses a legacy pattern of manual validation and case-conversion helpers. It should be refactored to match the superior pattern used in the `categories` and `users` features.
-  - **Sub-tasks:**
-    - [ ] **Create `WordSchema` and `WordModel`:** Introduce Pydantic schemas for request validation (`POST`, `PATCH`) and a Pydantic model for data representation and response serialization. This includes models for the `description` and `example` sub-collections.
-    - [ ] **Refactor `word_routes.py`:** Replace all manual request parsing (`request.get_json()`) and validation with Pydantic schema validation. Replace all calls to `camelized_response` and `decamelized_request` with `model.model_dump(by_alias=True)`.
-    - [ ] **Refactor `word_service.py`:** Update the service to accept Pydantic schema objects and return Pydantic model instances instead of raw dictionaries.
-    - [ ] **Deprecate `response_helpers.py`:** Once the `words` module is refactored, the `pyhumps`-based helper functions will no longer be needed and the file can be removed, simplifying the codebase.
+- [ ] **Migrate the `words` Module to the Modern Pydantic Architecture**
+  - **Current State**: The `words` module uses manual JSON parsing, `pyhumps` case conversion, and dictionary-based data handling
+  - **Target State**: Align with the modern pattern used by `users` and `categories` modules that leverage Pydantic for type safety, automatic validation, and serialization
+  - **Business Impact**: This is the largest feature module and its inconsistency affects development velocity and code maintainability
+  - **Technical Sub-tasks:**
+    - [ ] **Create Pydantic Models**: `Word`, `Description`, `Example` models with proper field aliases for camelCase/snake_case conversion
+    - [ ] **Create Request Schemas**: `WordCreateSchema`, `WordUpdateSchema`, `DescriptionSchema`, `ExampleSchema` for input validation
+    - [ ] **Refactor Service Layer**: Replace dictionary returns with typed Pydantic model instances
+    - [ ] **Refactor Route Layer**: Replace manual `request.get_json()` + `decamelized_request()` with Pydantic schema validation
+    - [ ] **Remove Legacy Dependencies**: Eliminate `camelized_response()`, `decamelized_request()`, and `pyhumps` dependency
+  - **Files to Remove**: `utils/response_helpers.py` (only used by words module)
+  - **Success Criteria**: All modules use identical architectural patterns, zero usage of `response_helpers.py`
 
 ## 🟨 Medium Priority: Code Quality & Consistency
 
-- [ ] **Standardize Logging Across All Modules**
+- [x] **Standardize Logging Across All Modules** ✅ **COMPLETED**
 
-  - **Issue**: The legacy `words` module (DAL, Service, Routes) uses `print()` statements for logging.
-  - **Task**: Replace all `print()` statements with the shared logger instance (`logger = logging.getLogger("infinite_vocab_app")`) to ensure structured, consistent logging throughout the application.
+  - **Issue**: ~~The legacy `words` module (DAL, Service, Routes) uses `print()` statements for logging.~~
+  - **Resolution**: ✅ Implemented comprehensive structured logging system with:
+    - Centralized logger configuration with environment-based log levels
+    - Request/response middleware with timing and sanitization
+    - Consistent logging across all layers (routes, services, DAL, middleware)
+    - All print statements replaced with structured logger calls
+    - Performance monitoring with @timed_execution decorator
+    - Proper error logging with stack traces (exc_info=True)
+    - Layer-specific prefixes (ROUTE, SERVICE, DAL, AUTH, CONFIG, FACTORY)
+    - Security features: PII redaction and request body truncation
+    - **Fixed duplicate request logging issue** by consolidating logging after authentication
 
 - [ ] **Remove Redundant Exception Handling**
   - **Issue**: Some services contain `try...except` blocks that catch a custom exception only to re-raise it immediately (e.g., `except NotFoundError: raise`).

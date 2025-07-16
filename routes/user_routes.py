@@ -16,6 +16,8 @@ user_bp = Blueprint("user_api", __name__, url_prefix="/api/v1/users")
 @user_bp.before_request
 def authentication_before_request():
     """Apply Firebase token authentication to all routes in this blueprint."""
+    # Log request BEFORE authentication
+    logger.info(f"REQUEST: {request.method} {request.path}")
     return firebase_token_required()
 
 
