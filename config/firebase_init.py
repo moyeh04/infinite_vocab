@@ -5,10 +5,6 @@ import sys
 import firebase_admin
 from firebase_admin import credentials
 
-from utils import setup_logging
-
-# Initialize logging
-logger = setup_logging()
 logger = logging.getLogger("infinite_vocab_app")
 
 # --- Flag to prevent multiple initializations ---
@@ -31,7 +27,7 @@ def initialize_firebase_app():
 
             if not os.path.exists(cred_path):
                 logger.critical(
-                    f"CONFIG: ERROR: Service account key file not found at {cred_path}"
+                    f"CONFIG: Service account key file not found at {cred_path}"
                 )
                 logger.critical("CONFIG: Firebase Admin SDK NOT initialized.")
                 logger.critical(

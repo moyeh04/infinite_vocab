@@ -6,8 +6,7 @@ from typing import Optional
 from firebase_admin import firestore
 
 from models import User
-from utils import DatabaseError
-from utils.logging import timed_execution
+from utils import DatabaseError, timed_execution
 
 logger = logging.getLogger("infinite_vocab_app")
 

@@ -13,8 +13,7 @@ from routes import (
     word_category_bp,
     words_bp,
 )
-from utils import camelized_response
-from utils.logging import log_request, log_response, setup_logging
+from utils import log_request, log_response, setup_logging
 
 # Initialize logging
 logger = setup_logging()
@@ -70,14 +69,15 @@ logger.info("APP: Application starting up, blueprints registered.")
 @app.route("/")
 def root_info():
     """Root endpoint for health check."""
-    return camelized_response(
+    from flask import jsonify
+
+    return jsonify(
         {
             "message": "Welcome to the Infinite Vocabulary API!",
             "version": "v1.0",
             "status": "healthy",
-        },
-        200,
-    )
+        }
+    ), 200
 
 
 if __name__ == "__main__":
