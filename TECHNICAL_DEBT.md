@@ -16,6 +16,7 @@ This document outlines the known technical debt and potential areas for improvem
     - [ ] **Refactor Service Layer**: Replace dictionary returns with typed Pydantic model instances
     - [ ] **Refactor Route Layer**: Replace manual `request.get_json()` + `decamelized_request()` with Pydantic schema validation
     - [ ] **Remove Legacy Dependencies**: Eliminate `camelized_response()`, `decamelized_request()`, and `pyhumps` dependency
+  - **Files to Remove**: `utils/response_helpers.py` (only used by words module)
   - **Success Criteria**: All modules use identical architectural patterns, zero usage of `response_helpers.py`
 
 ## 🟨 Medium Priority: Code Quality & Consistency
@@ -32,6 +33,7 @@ This document outlines the known technical debt and potential areas for improvem
     - Proper error logging with stack traces (exc_info=True)
     - Layer-specific prefixes (ROUTE, SERVICE, DAL, AUTH, CONFIG, FACTORY)
     - Security features: PII redaction and request body truncation
+    - **Fixed duplicate request logging issue** by consolidating logging after authentication
 
 - [ ] **Remove Redundant Exception Handling**
   - **Issue**: Some services contain `try...except` blocks that catch a custom exception only to re-raise it immediately (e.g., `except NotFoundError: raise`).

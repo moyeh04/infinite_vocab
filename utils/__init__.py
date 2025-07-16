@@ -15,7 +15,7 @@ from .exceptions import (
     WordServiceError,
 )
 from .helpers import generate_random_code
-from .logging import setup_logging, timed_execution, log_request, log_response
+from .logging import setup_logging, timed_execution, log_response
 from .response_helpers import camelized_response, decamelized_request, error_response
 
 __all__ = [
@@ -39,6 +39,5 @@ __all__ = [
     # Logging
     "setup_logging",
     "timed_execution",
-    "log_request",
     "log_response",
 ]

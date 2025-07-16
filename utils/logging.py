@@ -48,39 +48,6 @@ def setup_logging(log_level: Optional[str] = None):
     return logger
 
 
-def log_request(logger, request):
-    """
-    Log details about an incoming request.
-
-    Args:
-        logger: Logger instance
-        request: Flask request object
-    """
-    user_id = getattr(request, "user_id", None) or "anonymous"
-    logger.info(f"REQUEST: {request.method} {request.path} - User: {user_id}")
-
-    # Log request body at DEBUG level (sanitized for sensitive data)
-    if logger.isEnabledFor(logging.DEBUG) and request.is_json:
-        try:
-            # Create a copy of the json to avoid modifying the original
-            # Use silent=True to avoid raising exceptions for invalid JSON
-            sanitized_data = request.get_json(silent=True) or {}
-            if isinstance(sanitized_data, dict):
-                # Sanitize sensitive fields if present
-                for field in ["password", "token", "secret", "key"]:
-                    if field in sanitized_data:
-                        sanitized_data[field] = "[REDACTED]"
-
-                # Truncate large request bodies to avoid flooding logs
-                request_str = str(sanitized_data)
-                if len(request_str) > 1000:
-                    request_str = request_str[:1000] + "... [truncated]"
-                logger.debug(f"REQUEST BODY: {request_str}")
-        except Exception:
-            # Don't let request logging errors affect the request processing
-            pass
-
-
 def log_response(logger, request, response, start_time=None):
     """
     Log details about an outgoing response.

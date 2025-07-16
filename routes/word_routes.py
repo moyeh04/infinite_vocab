@@ -21,10 +21,8 @@ words_bp = Blueprint("words_api", __name__, url_prefix="/api/v1/words")
 
 @words_bp.before_request
 def authenticate_before_request():
-    # Log the incoming request
-    logger.info(
-        f"REQUEST: {request.method} {request.path} - User: {g.user_id if hasattr(g, 'user_id') else 'anonymous'}"
-    )
+    # Log request BEFORE authentication
+    logger.info(f"REQUEST: {request.method} {request.path}")
     return firebase_token_required()
 
 

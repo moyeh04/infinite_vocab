@@ -4,7 +4,6 @@ import time
 
 from flask import Flask, g, request
 
-from config import firebase_init  # noqa: F401
 from routes import (
     admin_bp,
     category_bp,
@@ -13,11 +12,14 @@ from routes import (
     word_category_bp,
     words_bp,
 )
-from utils import log_request, log_response, setup_logging
+from utils import log_response, setup_logging
 
-# Initialize logging
+# Initialize logging FIRST
 logger = setup_logging()
 logger.info("APP: Logging system initialized")
+
+# Import config AFTER logging is set up
+from config import firebase_init  # noqa: F401 E402
 
 # Log system information
 logger.info(f"APP: Python version: {sys.version}")
@@ -51,10 +53,9 @@ logger.info(f"APP: Successfully registered {blueprint_count} blueprints")
 
 # Request/response logging middleware
 @app.before_request
-def log_request_info():
-    """Log details about incoming requests."""
+def setup_request_timing():
+    """Set up request timing for response logging."""
     g.request_start_time = time.time()
-    log_request(logger, request)
 
 
 @app.after_request
@@ -81,13 +82,7 @@ def root_info():
 
 
 if __name__ == "__main__":
-    # Test logging at different levels
-    logger.debug(
-        "APP: This is a DEBUG message - visible only when DEBUG level is enabled"
-    )
-    logger.info("APP: Starting Flask development server.")
-    logger.warning("APP: This is a WARNING message - should always be visible")
-    logger.error("APP: This is an ERROR message - should always be visible")
+    logger.info("APP: Starting Flask development server")
 
     # Set debug=True to enable Flask's debug mode
     app.run(debug=True, port=5000)
