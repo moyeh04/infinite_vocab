@@ -52,3 +52,4 @@ This document outlines the known technical debt and potential areas for improvem
 - [ ] **Advanced Search Fields**: For a more robust search, consider adding dedicated lowercase fields in Firestore (e.g., `word_text_search`) to allow case-insensitive searching without affecting the display casing of the original data.
 - [ ] **Category Descriptions**: Add an optional `description` field to categories for better organization by users.
 - [ ] **Full Test Suite**: Develop a comprehensive suite of unit and integration tests to ensure long-term stability and catch regressions.
+- [ ] **Explore Full-Text Search (Learning)**: Research and experiment with Firestore full-text search integration (Algolia/Elasticsearch) for advanced search capabilities like fuzzy matching, synonyms, and content search within descriptions/examples. This is for learning purposes and future enhancement consideration.

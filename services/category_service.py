@@ -19,10 +19,10 @@ def create_category(db, user_id: str, schema: CategoryCreateSchema) -> Category:
     )
     try:
         existing_categories = c_dal.get_categories_by_user(db, user_id)
-        normalized_name = schema.category_name.strip().lower()
+        normalized_name = schema.category_name.strip()
 
         for existing_category in existing_categories:
-            if existing_category.category_name.lower() == normalized_name:
+            if existing_category.category_name.lower() == normalized_name.lower():
                 raise CategoryServiceError(
                     f"Category '{schema.category_name}' already exists for this user."
                 )
@@ -104,13 +104,13 @@ def update_category(
             return existing_category
 
         if "category_name" in updates:
-            new_name = updates["category_name"].lower()
-            if new_name != existing_category.category_name.lower():
+            new_name = updates["category_name"]
+            if new_name.lower() != existing_category.category_name.lower():
                 user_categories = c_dal.get_categories_by_user(db, user_id)
                 for cat in user_categories:
                     if (
                         cat.category_id != category_id
-                        and cat.category_name.lower() == new_name
+                        and cat.category_name.lower() == new_name.lower()
                     ):
                         raise CategoryServiceError(
                             f"Category '{updates['category_name']}' already exists."

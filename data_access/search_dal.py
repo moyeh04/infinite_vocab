@@ -3,25 +3,39 @@
 import logging
 from typing import List
 
+from firebase_admin import firestore
+
 from utils import DatabaseError
 
 logger = logging.getLogger("infinite_vocab_app")
 
 
 def search_words_by_name(db, user_id: str, query: str) -> List:
-    """Searches for words where word_text starts with the query string."""
+    """
+    Searches for words where word_text_search starts with the query string (case-insensitive).
+
+    Uses the dedicated word_text_search field for efficient case-insensitive searching
+    while preserving the original capitalization in word_text for display.
+    """
     logger.info(f"DAL: Searching words for user {user_id} with query '{query}'.")
     try:
-        query_text = query.lower()
+        query_lower = query.lower()
 
+        # Use the word_text_search field for efficient case-insensitive searching
         query_ref = (
             db.collection("words")
-            .where("user_id", "==", user_id)
-            .order_by("word_text")
-            .where("word_text", ">=", query_text)
-            .where("word_text", "<=", query_text + "\uf8ff")
+            .where(filter=firestore.FieldFilter("user_id", "==", user_id))
+            .order_by("word_text_search")
+            .where(filter=firestore.FieldFilter("word_text_search", ">=", query_lower))
+            .where(
+                filter=firestore.FieldFilter(
+                    "word_text_search", "<=", query_lower + "\uf8ff"
+                )
+            )
         )
+
         results = list(query_ref.stream())
+
         logger.info(
             f"DAL: Word search for user {user_id} found {len(results)} results."
         )
@@ -36,19 +50,33 @@ def search_words_by_name(db, user_id: str, query: str) -> List:
 
 
 def search_categories_by_name(db, user_id: str, query: str) -> List:
-    """Searches for categories where category_name starts with the query string."""
+    """
+    Searches for categories where category_name_search starts with the query string (case-insensitive).
+
+    Uses the dedicated category_name_search field for efficient case-insensitive searching
+    while preserving the original capitalization in category_name for display.
+    """
     logger.info(f"DAL: Searching categories for user {user_id} with query '{query}'.")
     try:
-        query_text = query.lower()
+        query_lower = query.lower()
+
+        # Use the category_name_search field for efficient case-insensitive searching
         query_ref = (
             db.collection("categories")
-            .where("user_id", "==", user_id)
-            .order_by("category_name")
-            .where("category_name", ">=", query_text)
-            .where("category_name", "<=", query_text + "\uf8ff")
+            .where(filter=firestore.FieldFilter("user_id", "==", user_id))
+            .order_by("category_name_search")
+            .where(
+                filter=firestore.FieldFilter("category_name_search", ">=", query_lower)
+            )
+            .where(
+                filter=firestore.FieldFilter(
+                    "category_name_search", "<=", query_lower + "\uf8ff"
+                )
+            )
         )
 
         results = list(query_ref.stream())
+
         logger.info(
             f"DAL: Category search for user {user_id} found {len(results)} results."
         )

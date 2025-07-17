@@ -10,6 +10,9 @@ class Category(BaseModel):
     category_id: Optional[str] = Field(alias="categoryId", default=None)
     user_id: str = Field(alias="userId")
     category_name: str = Field(alias="categoryName")
+    category_name_search: str = Field(
+        alias="categoryNameSearch"
+    )  # Lowercase version for searching
     category_color: str = Field(alias="categoryColor", default="#FFFFFF")
     created_at: Optional[datetime] = Field(alias="createdAt", default=None)
     updated_at: Optional[datetime] = Field(alias="updatedAt", default=None)
@@ -21,7 +24,7 @@ class Category(BaseModel):
         }
 
         # Allow both snake_case and camelCase field names
-        validate_by_name = True
+        populate_by_name = True
 
         # Example for API documentation (Response Example)
 

@@ -23,6 +23,7 @@ class CategoryFactory:
 
         return Category(
             category_name=normalized_name,
+            category_name_search=normalized_name.lower(),  # Lowercase version for searching
             category_color=validated_color,
             user_id=user_id,
         )
@@ -33,9 +34,13 @@ class CategoryFactory:
         updates = {}
 
         if schema.category_name is not None:
-            updates["category_name"] = CategoryFactory._normalize_category_name(
+            normalized_name = CategoryFactory._normalize_category_name(
                 schema.category_name
             )
+            updates["category_name"] = normalized_name
+            updates["category_name_search"] = (
+                normalized_name.lower()
+            )  # Lowercase version for searching
 
         if schema.category_color is not None:
             updates["category_color"] = CategoryFactory._validate_color_format(
@@ -49,14 +54,15 @@ class CategoryFactory:
 
     @staticmethod
     def _normalize_category_name(name: str) -> str:
-        """Business rule: lowercase and trimmed for searching."""
-        return name.strip().lower()
+        """Normalize category name by trimming whitespace, preserving original capitalization."""
+        return name.strip()
 
     @staticmethod
     def _validate_color_format(color: str) -> str:
         """Business rule: validate hex color format (6 characters)."""
-        color = color.strip().lower()
-        if not color.startswith("#") or len(color) != 7:
+        color = color.strip()
+        # Convert to lowercase only for validation, but preserve original case for storage
+        if not color.lower().startswith("#") or len(color) != 7:
             raise ValidationError(
                 "Color must be a valid hex color starting with # (e.g., #FF5733)"
             )

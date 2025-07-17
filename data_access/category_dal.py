@@ -21,6 +21,7 @@ def create_category(db, category: Category) -> Category:
         category_data = {
             "user_id": category.user_id,
             "category_name": category.category_name,
+            "category_name_search": category.category_name_search,  # Include search field
             "category_color": category.category_color,
             "createdAt": firestore.SERVER_TIMESTAMP,
         }
