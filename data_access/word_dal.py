@@ -61,27 +61,71 @@ def _execute_word_query(
 
 def find_word_by_text_for_user(db, user_id: str, word_text: str):
     """
-    Finds a specific word by its text for a given user, expects 0 or 1 result.
+    Finds a specific word by its text for a given user (case-insensitive), expects 0 or 1 result.
 
     Important:
-        This DAL function is tailored for checking if a word entry with the exact
-        text already exists for the specified user, primarily for duplicate prevention.
-        It calls the generic _execute_word_query with a limit of 1.
+        This DAL function is tailored for checking if a word entry with similar text
+        already exists for the specified user, primarily for duplicate prevention.
+        Uses case-insensitive matching to prevent duplicates like "JavaScript" and "javascript".
     """
-    logger.info(f"DAL: Finding word by text '{word_text}' for user {user_id}")
-    filters = [("word_text", "==", word_text)]
-    return _execute_word_query(db, user_id, additional_filters=filters, limit_count=1)
+    logger.info(
+        f"DAL: Finding word by text '{word_text}' for user {user_id} (case-insensitive)"
+    )
+
+    try:
+        # Use the word_text_search field for efficient case-insensitive matching
+        word_text_lower = word_text.lower()
+
+        query_ref = (
+            db.collection("words")
+            .where(filter=firestore.FieldFilter("user_id", "==", user_id))
+            .where(
+                filter=firestore.FieldFilter("word_text_search", "==", word_text_lower)
+            )
+            .limit(1)
+        )
+
+        matching_words = list(query_ref.stream())
+
+        # Simple return: just the word_id if exists, None if not
+        if matching_words and matching_words[0].exists:
+            return matching_words[0].id
+        else:
+            return None
+
+    except Exception as e:
+        logger.error(
+            f"DAL: Error in case-insensitive word lookup for '{word_text}', user {user_id}: {str(e)}",
+            exc_info=True,
+        )
+        raise DatabaseError(
+            f"DAL: Firestore error during case-insensitive word lookup: {str(e)}"
+        ) from e
 
 
 def get_word_by_id(db, word_id):
-    """Fetches a single word document from Firestore by its ID."""
-    # We skip ownership checks here since this isn't a transaction.
-    # It's more of a service layer's job.
+    """Fetches a single word document from Firestore by its ID and returns Word model."""
     try:
         logger.info(f"DAL: Attempting to fetch word by ID: '{word_id}'")
         doc_ref = db.collection("words").document(word_id)
         snapshot = doc_ref.get()
-        return snapshot
+
+        if not snapshot.exists:
+            logger.info(f"DAL: Word with ID '{word_id}' not found.")
+            return None
+
+        # Convert to Word model like category DAL does
+        from models import Word
+
+        word_data = snapshot.to_dict()
+        word_data["word_id"] = snapshot.id
+
+        # Fetch subcollections for complete Word model
+        word_data["descriptions"] = get_all_descriptions_for_word(db, word_id)
+        word_data["examples"] = get_all_examples_for_word(db, word_id)
+
+        return Word.model_validate(word_data)
+
     except Exception as e:
         logger.error(
             f"DAL: Error fetching word by ID '{word_id}': {str(e)}", exc_info=True
@@ -93,13 +137,14 @@ def get_word_by_id(db, word_id):
 
 def update_word_by_id(db, word_id, new_word_text):
     """
-    Updates the 'word_text' and 'updatedAt' timestamp for a specific word document.
+    Updates the 'word_text', 'word_text_search', and 'updatedAt' timestamp for a specific word document.
     Returns True on success. Raises DatabaseError on failure.
     """
     try:
         word_ref = db.collection("words").document(word_id)
         data_to_update = {
             "word_text": new_word_text,
+            "word_text_search": new_word_text.lower(),  # Update search field for case-insensitive searching
             "updatedAt": firestore.SERVER_TIMESTAMP,
         }
         word_ref.update(data_to_update)
@@ -145,14 +190,40 @@ def delete_word_by_id(db, word_id: str):
 
 
 def get_all_words_for_user_sorted_by_stars(db, user_id: str):
-    """Gets all words for a user, sorted by word_stars descending."""
+    """Gets all words for a user, sorted by word_stars descending, returns List[Word] models."""
     logger.info(f"DAL: Getting all words for user {user_id}, sorted by word_stars")
     order_config = ("word_stars", "DESCENDING")
-    return _execute_word_query(db, user_id, order_by_config=order_config)
+    snapshots = _execute_word_query(db, user_id, order_by_config=order_config)
+
+    # Convert snapshots to Word models like category DAL does
+    from models import Word
+
+    word_models = []
+
+    for snapshot in snapshots:
+        word_data = snapshot.to_dict()
+        word_data["word_id"] = snapshot.id
+
+        # Fetch subcollections for complete Word model
+        word_data["descriptions"] = get_all_descriptions_for_word(db, snapshot.id)
+        word_data["examples"] = get_all_examples_for_word(db, snapshot.id)
+
+        word_models.append(Word.model_validate(word_data))
+
+    logger.info(f"DAL: Converted {len(word_models)} Word models for user {user_id}")
+    return word_models
 
 
 def add_word_to_db(db, data_to_save: dict):
+    """
+    Adds a new word document to Firestore.
+    Ensures word_text_search field is set for case-insensitive searching.
+    """
     try:
+        # Make sure word_text_search is set for case-insensitive searching
+        if "word_text" in data_to_save and "word_text_search" not in data_to_save:
+            data_to_save["word_text_search"] = data_to_save["word_text"].lower()
+
         timestamp, doc_ref = db.collection("words").add(data_to_save)
         logger.info(f"DAL: Word added to Firestore with ID: {doc_ref.id}")
         return timestamp, doc_ref
@@ -244,7 +315,7 @@ def delete_description_from_word_db(db, word_id: str, description_id: str):
 
 
 def get_description_by_id(db, word_id: str, description_id: str):
-    """Fetches a single description document from a word's descriptions subcollection by its ID."""
+    """Fetches a single description document and returns Description model or None."""
     try:
         logger.info(
             f"DAL: Attempting to fetch description by ID: '{description_id}' from word '{word_id}'"
@@ -256,7 +327,21 @@ def get_description_by_id(db, word_id: str, description_id: str):
             .document(description_id)
         )
         snapshot = description_ref.get()
-        return snapshot
+
+        if not snapshot.exists:
+            logger.info(
+                f"DAL: Description with ID '{description_id}' not found in word '{word_id}'."
+            )
+            return None
+
+        # Convert to Description model like category DAL does
+        from models import Description
+
+        description_data = snapshot.to_dict()
+        description_data["description_id"] = snapshot.id
+
+        return Description.model_validate(description_data)
+
     except Exception as e:
         logger.error(
             f"DAL: Error fetching description by ID '{description_id}' from word '{word_id}': {str(e)}",
@@ -323,7 +408,7 @@ def delete_example_from_word_db(db, word_id: str, example_id: str):
 
 
 def get_example_by_id(db, word_id: str, example_id: str):
-    """Fetches a single example document from a word's examples subcollection by its ID."""
+    """Fetches a single example document and returns Example model or None."""
     try:
         logger.info(
             f"DAL: Attempting to fetch example by ID: '{example_id}' from word '{word_id}'"
@@ -335,7 +420,21 @@ def get_example_by_id(db, word_id: str, example_id: str):
             .document(example_id)
         )
         snapshot = example_ref.get()
-        return snapshot
+
+        if not snapshot.exists:
+            logger.info(
+                f"DAL: Example with ID '{example_id}' not found in word '{word_id}'."
+            )
+            return None
+
+        # Convert to Example model like category DAL does
+        from models import Example
+
+        example_data = snapshot.to_dict()
+        example_data["example_id"] = snapshot.id
+
+        return Example.model_validate(example_data)
+
     except Exception as e:
         logger.error(
             f"DAL: Error fetching example by ID '{example_id}' from word '{word_id}': {str(e)}",
@@ -369,12 +468,13 @@ def append_example_to_word_db(db, word_id: str, example_data: dict):
         ) from e
 
 
-def get_all_descriptions_for_word(db, word_id: str) -> list:
+def get_all_descriptions_for_word(db, word_id: str):
     """
-    Fetches all description documents for a given word_id from its 'descriptions' subcollection.
+    Fetches all description documents for a given word_id and returns List[Description] models.
     """
-
     try:
+        from models import Description
+
         descriptions_list = []
         # Construct the reference to the subcollection
         descriptions_ref = (
@@ -386,7 +486,8 @@ def get_all_descriptions_for_word(db, word_id: str) -> list:
             if desc_snap.exists:
                 description_data = desc_snap.to_dict()
                 description_data["description_id"] = desc_snap.id
-                descriptions_list.append(description_data)
+                descriptions_list.append(Description.model_validate(description_data))
+
         logger.info(
             f"DAL: Retrieved {len(descriptions_list)} descriptions for word '{word_id}'"
         )
@@ -401,11 +502,13 @@ def get_all_descriptions_for_word(db, word_id: str) -> list:
         ) from e
 
 
-def get_all_examples_for_word(db, word_id: str) -> list:
+def get_all_examples_for_word(db, word_id: str):
     """
-    Fetches all example documents for a given word_id from its 'examples' subcollection.
+    Fetches all example documents for a given word_id and returns List[Example] models.
     """
     try:
+        from models import Example
+
         examples_list = []
         # Construct the reference to the subcollection
         examples_ref = db.collection("words").document(word_id).collection("examples")
@@ -415,7 +518,8 @@ def get_all_examples_for_word(db, word_id: str) -> list:
             if example_snap.exists:
                 example_data = example_snap.to_dict()
                 example_data["example_id"] = example_snap.id
-                examples_list.append(example_data)
+                examples_list.append(Example.model_validate(example_data))
+
         logger.info(
             f"DAL: Retrieved {len(examples_list)} examples for word '{word_id}'"
         )

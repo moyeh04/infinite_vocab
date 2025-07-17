@@ -9,10 +9,14 @@ from .search_models import (
     WordSearchResult,
 )
 from .user_model import User
+from .word_models import Word, Description, Example
 
 __all__ = [
     "Category",
     "User",
+    "Word",
+    "Description",
+    "Example",
     "CategorySearchResult",
     "SearchResults",
     "WordSearchResult",

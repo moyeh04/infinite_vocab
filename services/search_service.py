@@ -5,7 +5,7 @@ import logging
 from google.cloud.firestore_v1.client import Client
 
 from data_access import search_dal
-from models.search_models import (
+from models import (
     CategorySearchResult,
     SearchResults,
     WordSearchResult,

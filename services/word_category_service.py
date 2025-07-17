@@ -17,8 +17,8 @@ def add_word_to_category(db, user_id: str, category_id: str, word_id: str) -> di
         f"SERVICE: Linking word {word_id} to category {category_id} for user {user_id}."
     )
     try:
-        word_doc = w_dal.get_word_by_id(db, word_id)
-        if not word_doc.exists or word_doc.to_dict().get("user_id") != user_id:
+        word_model = w_dal.get_word_by_id(db, word_id)
+        if not word_model or word_model.user_id != user_id:
             raise NotFoundError("Word not found or access is forbidden.")
 
         category = c_dal.get_category_by_id(db, category_id)
@@ -30,7 +30,7 @@ def add_word_to_category(db, user_id: str, category_id: str, word_id: str) -> di
 
         wc_dal.link_word_to_category(db, user_id, word_id, category_id)
 
-        word_name = word_doc.to_dict().get("word_text", "word")
+        word_name = word_model.word_text
         category_name = category.category_name
         logger.info(
             f"SERVICE: Successfully linked word '{word_name}' to category '{category_name}'."
@@ -59,8 +59,8 @@ def remove_word_from_category(db, user_id: str, category_id: str, word_id: str) 
         f"SERVICE: Unlinking word {word_id} from category {category_id} for user {user_id}."
     )
     try:
-        word_doc = w_dal.get_word_by_id(db, word_id)
-        if not word_doc.exists or word_doc.to_dict().get("user_id") != user_id:
+        word_model = w_dal.get_word_by_id(db, word_id)
+        if not word_model or word_model.user_id != user_id:
             raise NotFoundError("Word not found or access is forbidden.")
 
         category = c_dal.get_category_by_id(db, category_id)
@@ -72,7 +72,7 @@ def remove_word_from_category(db, user_id: str, category_id: str, word_id: str) 
 
         wc_dal.unlink_word_from_category(db, word_id, category_id)
 
-        word_name = word_doc.to_dict().get("word_text", "word")
+        word_name = word_model.word_text
         category_name = category.category_name
         logger.info(
             f"SERVICE: Successfully unlinked word '{word_name}' from category '{category_name}'."
@@ -112,12 +112,11 @@ def get_words_for_category(db, user_id: str, category_id: str) -> List[dict]:
 
         words_list = []
         for word_id in word_ids:
-            word_doc = w_dal.get_word_by_id(db, word_id)
-            if word_doc.exists:
-                word_data = word_doc.to_dict()
-                if word_data.get("user_id") == user_id:
-                    word_data["word_id"] = word_doc.id
-                    words_list.append(word_data)
+            word_model = w_dal.get_word_by_id(db, word_id)
+            if word_model and word_model.user_id == user_id:
+                # Convert Word model to dict for backward compatibility
+                word_data = word_model.model_dump(by_alias=True)
+                words_list.append(word_data)
 
         logger.info(
             f"SERVICE: Found {len(words_list)} words for category {category_id}."

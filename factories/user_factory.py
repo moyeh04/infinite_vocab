@@ -4,7 +4,7 @@ import logging
 
 from models import User
 from schemas import UserCreateSchema, UserUpdateSchema
-from utils.helpers import generate_random_code
+from utils import generate_random_code
 
 logger = logging.getLogger("infinite_vocab_app")
 

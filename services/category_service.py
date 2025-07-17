@@ -4,7 +4,7 @@ import logging
 from typing import List
 
 from data_access import category_dal as c_dal
-from factories.category_factory import CategoryFactory
+from factories import CategoryFactory
 from models import Category
 from schemas import CategoryCreateSchema, CategoryUpdateSchema
 from utils import CategoryServiceError, DatabaseError, NotFoundError

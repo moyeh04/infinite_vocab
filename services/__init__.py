@@ -7,14 +7,14 @@ from . import (
     search_service,
     user_service,
     word_category_service,
-    word_service,
+    word,
 )
 from .search_service import find_words_and_categories
 
 __all__ = [
     "admin_service",
     "user_service",
-    "word_service",
+    "word",
     "category_service",
     "word_category_service",
     "search_service",
