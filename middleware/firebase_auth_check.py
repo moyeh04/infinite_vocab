@@ -4,9 +4,7 @@ import logging
 from functools import wraps
 
 from firebase_admin import auth, firestore
-from flask import g, request
-
-from utils import error_response
+from flask import g, jsonify, request
 
 logger = logging.getLogger("infinite_vocab_app")
 
@@ -17,7 +15,7 @@ def firebase_token_required():
     if not auth_header or not auth_header.startswith("Bearer "):
         logger.warning("AUTH: Authorization header missing or invalid.")
 
-        return error_response("Authorization header missing or invalid format", 401)
+        return jsonify({"error": "Authorization header missing or invalid format"}), 401
     try:
         id_token = auth_header.split("Bearer ")[1]
         decoded_token = auth.verify_id_token(id_token)
@@ -27,7 +25,7 @@ def firebase_token_required():
 
     except Exception as e:
         logger.error(f"AUTH: Error verifying Firebase ID token: {e}", exc_info=True)
-        return error_response("Invalid or expired authentication token", 401)
+        return jsonify({"error": "Invalid or expired authentication token"}), 401
 
 
 def admin_required(f):
@@ -41,7 +39,7 @@ def admin_required(f):
                 "AUTH: Admin check failed - admin_required used without a user token.",
                 exc_info=True,
             )
-            return error_response("Authentication token is required.", 401)
+            return jsonify({"error": "Authentication token is required."}), 401
 
         try:
             admin_doc = g.db.collection("admins").document(g.user_id).get()
@@ -49,7 +47,9 @@ def admin_required(f):
                 logger.warning(
                     f"AUTH: Admin check failed - User {g.user_id} is not an admin."
                 )
-                return error_response("Forbidden: Admin privileges are required.", 403)
+                return jsonify(
+                    {"error": "Forbidden: Admin privileges are required."}
+                ), 403
 
             g.admin_role = admin_doc.to_dict().get("role", "admin")
             logger.info(f"AUTH: User {g.user_id} is an admin with role: {g.admin_role}")
@@ -58,9 +58,9 @@ def admin_required(f):
                 f"AUTH: DB error checking admin status for user {g.user_id}: {e}",
                 exc_info=True,
             )
-            return error_response(
-                "An internal error occurred while verifying permissions.", 500
-            )
+            return jsonify(
+                {"error": "An internal error occurred while verifying permissions."}
+            ), 500
 
         return f(*args, **kwargs)
 
@@ -79,15 +79,17 @@ def super_admin_required(f):
                 exc_info=True,
             )
             # This is a fallback, but the main check in admin_required should have caught it.
-            return error_response("Forbidden: Admin privileges are required.", 403)
+            return jsonify({"error": "Forbidden: Admin privileges are required."}), 403
 
         if g.admin_role != "super-admin":
             logger.warning(
                 f"AUTH: Super admin check failed - User {g.user_id} has role '{g.admin_role}', but 'super-admin' is required."
             )
-            return error_response(
-                "Forbidden: Super-admin privileges are required for this action.", 403
-            )
+            return jsonify(
+                {
+                    "error": "Forbidden: Super-admin privileges are required for this action."
+                }
+            ), 403
 
         logger.info(f"AUTH: User {g.user_id} verified as super-admin.")
         return f(*args, **kwargs)
