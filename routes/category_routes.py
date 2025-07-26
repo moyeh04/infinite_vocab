@@ -20,7 +20,7 @@ def authenticate_before_request():
     return firebase_token_required()
 
 
-@category_bp.route("/", methods=["POST"])
+@category_bp.route("", methods=["POST"])
 def create_category_route():
     """Create a new category for a user"""
     logger.info(f"ROUTE: create_category_route invoked for user_id: {g.user_id}")
@@ -53,7 +53,7 @@ def create_category_route():
         return jsonify({"error": "Internal server error"}), 500
 
 
-@category_bp.route("/", methods=["GET"])
+@category_bp.route("", methods=["GET"])
 def get_categories_route():
     """Get all categories for authenticated user"""
     logger.info(f"ROUTE: get_categories_route invoked for user_id: {g.user_id}")

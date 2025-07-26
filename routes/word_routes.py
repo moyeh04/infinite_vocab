@@ -1,23 +1,24 @@
 import logging
-from flask import Blueprint, g, request, jsonify
+
+from flask import Blueprint, g, jsonify, request
 
 from middleware import firebase_token_required
-from services import word as ws
 from schemas import (
-    WordCreateSchema,
-    WordUpdateSchema,
-    WordExistenceCheckSchema,
     DescriptionCreateSchema,
     DescriptionUpdateSchema,
     ExampleCreateSchema,
     ExampleUpdateSchema,
+    WordCreateSchema,
+    WordExistenceCheckSchema,
+    WordUpdateSchema,
 )
+from services import word as ws
 from utils import (
     DuplicateEntryError,
     ForbiddenError,
     NotFoundError,
-    WordServiceError,
     ValidationError,
+    WordServiceError,
 )
 
 logger = logging.getLogger("infinite_vocab_app")
@@ -63,7 +64,7 @@ def check_word_existence():
         ), 500
 
 
-@words_bp.route("/", methods=["POST"])
+@words_bp.route("", methods=["POST"])
 def create_word():
     logger.info(f"ROUTE: create_word invoked for user_id: {g.user_id}")
     try:
@@ -98,7 +99,7 @@ def create_word():
         return jsonify({"error": "An unexpected server error occurred"}), 500
 
 
-@words_bp.route("/", methods=["GET"])
+@words_bp.route("", methods=["GET"])
 def list_words():
     logger.info(f"ROUTE: list_words invoked for user_id: {g.user_id}")
     try:

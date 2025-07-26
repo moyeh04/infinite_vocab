@@ -29,13 +29,13 @@ logger.info(f"APP: Current working directory: {os.getcwd()}")
 
 # Initialize Flask application
 app = Flask(__name__)
+app.url_map.strict_slashes = False
 logger.info("APP: Flask application instance created")
 
-# Enable CORS with auth header support
 CORS(
     app,
-    origins=["http://localhost:5500", "http://localhost:3000", "http://127.0.0.1:5500"],
-    methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    origins=["http://localhost:5500", "http://localhost:3000"],
+    methods=["GET", "POST", "PATCH", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["Content-Type", "Authorization"],
     supports_credentials=True,
 )

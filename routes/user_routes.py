@@ -21,7 +21,7 @@ def authentication_before_request():
     return firebase_token_required()
 
 
-@user_bp.route("/", methods=["POST"])
+@user_bp.route("", methods=["POST"])
 def get_or_create_user_route():
     """
     Handles initial user sign-in.

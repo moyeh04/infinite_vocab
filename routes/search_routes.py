@@ -20,7 +20,7 @@ def authentication_before_request():
     return firebase_token_required()
 
 
-@search_bp.route("/", methods=["GET"])
+@search_bp.route("", methods=["GET"])
 def search_route():
     """
     Performs a prefix search across words and categories for the user.
