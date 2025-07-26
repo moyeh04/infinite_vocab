@@ -11,6 +11,8 @@ logger = logging.getLogger("infinite_vocab_app")
 
 def firebase_token_required():
     """A standard function to be used in `before_request` hooks."""
+    if request.method == "OPTIONS":
+        return None  # CORS handles this, no need for 200 code response
     auth_header = request.headers.get("Authorization")
     if not auth_header or not auth_header.startswith("Bearer "):
         logger.warning("AUTH: Authorization header missing or invalid.")

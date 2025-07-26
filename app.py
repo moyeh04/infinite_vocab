@@ -3,6 +3,7 @@ import sys
 import time
 
 from flask import Flask, g, request
+from flask_cors import CORS
 
 from routes import (
     admin_bp,
@@ -29,6 +30,16 @@ logger.info(f"APP: Current working directory: {os.getcwd()}")
 # Initialize Flask application
 app = Flask(__name__)
 logger.info("APP: Flask application instance created")
+
+# Enable CORS with auth header support
+CORS(
+    app,
+    origins=["http://localhost:5500", "http://localhost:3000", "http://127.0.0.1:5500"],
+    methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_headers=["Content-Type", "Authorization"],
+    supports_credentials=True,
+)
+logger.info("APP: CORS enabled for all origins with preflight support")
 
 # Register all blueprints
 blueprint_count = 0
