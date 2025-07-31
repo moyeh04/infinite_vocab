@@ -1,0 +1,21 @@
+meta {
+  name: Check Word Existence
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{appUrl}}/api/v1/words/check-existence
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{userToken}}
+}
+
+body:json {
+  {
+      "wordText": "{{wordTextSearch}}"
+  }
+}

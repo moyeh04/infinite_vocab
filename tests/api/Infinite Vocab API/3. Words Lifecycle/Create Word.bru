@@ -5,7 +5,7 @@ meta {
 }
 
 post {
-  url: {{appUrl}}/api/v1/words
+  url: {{appUrl}}/api/v1/words/
   body: json
   auth: bearer
 }
@@ -26,6 +26,7 @@ tests {
   test("Status code is 201", function () { expect(res.getStatus()).to.equal(201); });
   const responseData = res.getBody();
   if (responseData.wordId) { bru.setVar("wordId", responseData.wordId); }
+  if (responseData.wordTextSearch && responseData.wordTextSearch.length > 0) { bru.setVar("wordTextSearch", responseData.wordTextSearch); }
   if (responseData.descriptions && responseData.descriptions.length > 0) { bru.setVar("descriptionId", responseData.descriptions[0].descriptionId); }
   if (responseData.examples && responseData.examples.length > 0) { bru.setVar("exampleId", responseData.examples[0].exampleId); }
 }

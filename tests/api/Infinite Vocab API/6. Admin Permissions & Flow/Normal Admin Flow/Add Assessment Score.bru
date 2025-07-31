@@ -5,7 +5,7 @@ meta {
 }
 
 post {
-  url: {{appUrl}}/api/v1/admin/students/{{userId}}/score
+  url: {{appUrl}}/api/v1/admin/students/{{userCode}}/score
   body: json
   auth: bearer
 }
@@ -16,7 +16,7 @@ auth:bearer {
 
 body:json {
   {
-      "scoreChange": 15,
+      "scoreChange": -5,
       "reason": "Excellent weekly progress."
   }
 }

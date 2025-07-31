@@ -1,0 +1,19 @@
+meta {
+  name: Search users
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{appUrl}}/api/v1/admin/users/find?code={{userCode}}
+  body: none
+  auth: bearer
+}
+
+params:query {
+  code: {{userCode}}
+}
+
+auth:bearer {
+  token: {{adminToken}}
+}

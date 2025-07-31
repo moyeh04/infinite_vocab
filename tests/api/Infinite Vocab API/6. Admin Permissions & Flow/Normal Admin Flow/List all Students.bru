@@ -1,11 +1,11 @@
 meta {
-  name: Get My Profile
+  name: List all Students
   type: http
   seq: 4
 }
 
 get {
-  url: {{appUrl}}/api/v1/users/me
+  url: {{appUrl}}/api/v1/admin/students
   body: none
   auth: bearer
 }

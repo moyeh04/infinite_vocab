@@ -1,11 +1,11 @@
 meta {
   name: Add Example
   type: http
-  seq: 6
+  seq: 7
 }
 
 post {
-  url: {{appUrl}}/api/v1/words/{{wordId}}/descriptions
+  url: {{appUrl}}/api/v1/words/{{wordId}}/examples
   body: json
   auth: bearer
 }
@@ -16,7 +16,7 @@ auth:bearer {
 
 body:json {
   {
-      "descriptionText": "A fleeting moment in time."
+      "exampleText": "A fleeting moment in time."
   }
 }
 

@@ -1,0 +1,21 @@
+meta {
+  name: Update Admin Role
+  type: http
+  seq: 4
+}
+
+patch {
+  url: {{appUrl}}/api/v1/admin/users/{{adminCode}}/role
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{superAdminToken}}
+}
+
+body:json {
+  {
+    "role": "super-admin"
+  }
+}

@@ -1,11 +1,11 @@
 meta {
   name: Delete Example
   type: http
-  seq: 11
+  seq: 12
 }
 
 delete {
-  url: {{appUrl}}/api/v1/words/{{wordId}}
+  url: {{appUrl}}/api/v1/words/{{wordId}}/examples/{{exampleId}}
   body: none
   auth: bearer
 }

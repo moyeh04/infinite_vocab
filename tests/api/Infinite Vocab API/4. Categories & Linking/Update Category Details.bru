@@ -1,0 +1,23 @@
+meta {
+  name: Update Category Details
+  type: http
+  seq: 3
+}
+
+put {
+  url: {{appUrl}}/api/v1/categories/{{linkTestCategoryId}}
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+      "categoryName": "Character Traits {{$timestamp}}",
+      "categoryColor": "#1BBB9C"
+  }
+}
+
+tests {
+  const responseData = res.getBody();
+  if (responseData.categoryId) { bru.setVar("linkTestCategoryId", responseData.categoryId); }
+}

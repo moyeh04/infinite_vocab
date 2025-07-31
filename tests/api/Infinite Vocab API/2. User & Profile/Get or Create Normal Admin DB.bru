@@ -23,5 +23,5 @@ body:json {
 tests {
   test("Status code is 201 Created", function () { expect(res.getStatus()).to.equal(201); });
   const responseData = res.getBody();
-  if (responseData.userCode) { bru.setVar("userCode", responseData.userCode); }
+  if (responseData.userCode) { bru.setVar("adminCode", responseData.userCode); }
 }

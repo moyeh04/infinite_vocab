@@ -1,11 +1,11 @@
 meta {
   name: Demote Normal Admin
   type: http
-  seq: 2
+  seq: 3
 }
 
 delete {
-  url: {{appUrl}}/api/v1/admin/users/{{adminId}}/demote
+  url: {{appUrl}}/api/v1/admin/users/{{adminCode}}/demote
   body: none
   auth: bearer
 }

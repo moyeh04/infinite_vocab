@@ -1,11 +1,11 @@
 meta {
   name: Promote Normal Admin
   type: http
-  seq: 1
+  seq: 2
 }
 
 post {
-  url: {{appUrl}}/api/v1/admin/users/{{adminId}}/promote
+  url: {{appUrl}}/api/v1/admin/users/{{adminCode}}/promote
   body: none
   auth: bearer
 }
