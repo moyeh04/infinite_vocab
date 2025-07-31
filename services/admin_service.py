@@ -96,6 +96,7 @@ def remove_admin_privileges(db, user_id_to_demote: str):
     """Demotes an admin back to a regular user."""
     logger.info(f"SERVICE: Attempting to demote admin {user_id_to_demote}.")
     try:
+        user_to_demote = u_dal.get_user_by_id(db, user_id_to_demote)
         admin_ids = a_dal.get_all_admin_ids(db)
         if user_id_to_demote not in admin_ids:
             raise NotFoundError("Cannot demote: User is not an admin.")
@@ -103,7 +104,9 @@ def remove_admin_privileges(db, user_id_to_demote: str):
         a_dal.demote_admin(db, user_id_to_demote)
         logger.info(f"SERVICE: Successfully demoted admin {user_id_to_demote}.")
 
-        return {"message": "Admin privileges have been revoked."}
+        return {
+            "message": f"Admin '{user_to_demote.user_name}' privileges have been revoked."
+        }
     except NotFoundError as e:
         logger.warning(
             f"SERVICE: Attempt to demote non-admin user {user_id_to_demote} failed: {e}"
