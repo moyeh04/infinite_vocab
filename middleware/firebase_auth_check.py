@@ -97,3 +97,62 @@ def super_admin_required(f):
         return f(*args, **kwargs)
 
     return decorated_function
+
+
+def resolve_user_by_code(param_name: str):
+    """
+    Decorator that finds a user by a `user_code` from the URL.
+
+    This performs a direct database lookup for the user, handles the not
+    found case, and attaches the resolved `target_user_id` to the Flask `g`
+    object for use within the decorated route. It is self-contained and
+    does not call the service layer.
+
+    Args:
+        param_name: The name of the URL keyword argument holding the user_code.
+    """
+
+    def decorator(f):
+        @wraps(f)
+        def decorated_function(*args, **kwargs):
+            user_code = kwargs.get(param_name)
+            if not user_code:
+                # This is a developer configuration error.
+                logger.error(
+                    f"DEV_ERROR: `resolve_user_by_code` decorator used with invalid param_name '{param_name}'.",
+                    exc_info=True,
+                )
+                return jsonify({"error": "Server configuration error."}), 500
+
+            try:
+                users_ref = g.db.collection("users")
+                query = users_ref.where("user_code", "==", user_code).limit(1)
+                docs = list(query.stream())
+
+                if not docs:
+                    logger.warning(
+                        f"AUTH: User with code '{user_code}' not found by admin {g.user_id}."
+                    )
+                    return jsonify(
+                        {"error": f"User with code '{user_code}' not found."}
+                    ), 404
+
+                target_user_doc = docs[0]
+                g.target_user_id = target_user_doc.id
+                # Store the code on `g` as well, for consistent logging in the route.
+                g.target_user_code = user_code
+
+            except Exception as e:
+                logger.error(
+                    f"DB_ERROR: Failed lookup for user_code '{user_code}' by admin {g.user_id}: {e}",
+                    exc_info=True,
+                )
+                return jsonify(
+                    {"error": "A database error occurred while finding the user."}
+                ), 500
+
+            return f(*args, **kwargs)
+
+        return decorated_function
+
+    return decorator

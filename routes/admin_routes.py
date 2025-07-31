@@ -4,7 +4,12 @@ import logging
 
 from flask import Blueprint, g, jsonify, request
 
-from middleware import admin_required, firebase_token_required, super_admin_required
+from middleware import (
+    admin_required,
+    firebase_token_required,
+    resolve_user_by_code,
+    super_admin_required,
+)
 from schemas import RoleUpdateSchema, ScoreUpdateSchema
 from services import admin_service
 from utils import AdminServiceError, DuplicateEntryError, NotFoundError, ValidationError
@@ -23,6 +28,7 @@ def authentication_before_request():
 
 @admin_bp.route("/users", methods=["GET"])
 @admin_required
+@super_admin_required
 def list_all_users_route():
     """Endpoint for an admin to get a list of all users. Accessible by: admin, super-admin"""
     logger.info(f"ROUTE: Admin {g.user_id} requesting to list all users.")
@@ -38,16 +44,20 @@ def list_all_users_route():
         return jsonify({"error": str(e)}), 500
 
 
-@admin_bp.route("/users/<user_id_to_promote>/promote", methods=["POST"])
+@admin_bp.route("/users/<user_code_to_promote>/promote", methods=["POST"])
 @admin_required
 @super_admin_required
-def promote_user_route(user_id_to_promote: str):
+@resolve_user_by_code("user_code_to_promote")
+def promote_user_route(user_code_to_promote: str):
     """Promotes a specified user to an admin role. Accessible by: super-admin ONLY"""
+    # Translation from public code to internal ID
+    user_id_to_promote = g.target_user_id
     logger.info(
-        f"ROUTE: Super-admin {g.user_id} attempting to promote user {user_id_to_promote}."
+        f"ROUTE: Super-admin {g.user_id} attempting to promote user {user_id_to_promote} (code: {user_code_to_promote})."
     )
     try:
         current_admin_id = g.user_id
+
         result = admin_service.add_admin_privileges(
             g.db, user_id_to_promote, current_admin_id
         )
@@ -72,13 +82,15 @@ def promote_user_route(user_id_to_promote: str):
         return jsonify({"error": str(e)}), 500
 
 
-@admin_bp.route("/users/<user_id>/role", methods=["PATCH"])
+@admin_bp.route("/users/<user_code>/role", methods=["PATCH"])
 @admin_required
 @super_admin_required
-def update_role_route(user_id: str):
+@resolve_user_by_code("user_code")
+def update_role_route(user_code: str):
     """Updates the role of an existing admin. Accessible by: super-admin ONLY"""
+    user_id = g.target_user_id
     logger.info(
-        f"ROUTE: Super-admin {g.user_id} attempting to update role for user {user_id}."
+        f"ROUTE: Super-admin {g.user_id} attempting to update role for user {user_id} (code: {user_code})."
     )
     try:
         schema = RoleUpdateSchema(**request.get_json())
@@ -105,13 +117,15 @@ def update_role_route(user_id: str):
         return jsonify({"error": str(e)}), 500
 
 
-@admin_bp.route("/users/<user_id_to_demote>/demote", methods=["DELETE"])
+@admin_bp.route("/users/<user_code_to_demote>/demote", methods=["DELETE"])
 @admin_required
 @super_admin_required
-def demote_user_route(user_id_to_demote: str):
+@resolve_user_by_code("user_code_to_demote")
+def demote_user_route(user_code_to_demote: str):
     """Revokes a user's admin privileges. Accessible by: super-admin ONLY"""
+    user_id_to_demote = g.target_user_id
     logger.info(
-        f"ROUTE: Super-admin {g.user_id} attempting to demote user {user_id_to_demote}."
+        f"ROUTE: Super-admin {g.user_id} attempting to demote user {user_id_to_demote} (code: {user_code_to_demote})."
     )
 
     try:
@@ -132,9 +146,6 @@ def demote_user_route(user_id_to_demote: str):
         return jsonify({"error": str(e)}), 500
 
 
-# Add these new routes to the end of routes/admin_routes.py
-
-
 @admin_bp.route("/students", methods=["GET"])
 @admin_required
 def list_my_students_route():
@@ -150,11 +161,15 @@ def list_my_students_route():
         return jsonify({"error": str(e)}), 500
 
 
-@admin_bp.route("/students/<student_id>", methods=["POST"])
+@admin_bp.route("/students/<student_code>", methods=["POST"])
 @admin_required
-def assign_student_route(student_id: str):
+@resolve_user_by_code("student_code")
+def assign_student_route(student_code: str):
     """Assigns a student to the authenticated admin."""
-    logger.info(f"ROUTE: Admin {g.user_id} attempting to assign student {student_id}.")
+    student_id = g.target_user_id
+    logger.info(
+        f"ROUTE: Admin {g.user_id} attempting to assign student {student_id} (code: {student_code})."
+    )
     try:
         result = admin_service.assign_student_to_admin(g.db, g.user_id, student_id)
         return jsonify(result), 200
@@ -172,11 +187,15 @@ def assign_student_route(student_id: str):
         return jsonify({"error": str(e)}), 500
 
 
-@admin_bp.route("/students/<student_id>", methods=["DELETE"])
+@admin_bp.route("/students/<student_code>", methods=["DELETE"])
 @admin_required
-def remove_student_route(student_id: str):
+@resolve_user_by_code("student_code")
+def remove_student_route(student_code: str):
     """Removes a student from the authenticated admin's management."""
-    logger.info(f"ROUTE: Admin {g.user_id} attempting to remove student {student_id}.")
+    student_id = g.target_user_id
+    logger.info(
+        f"ROUTE: Admin {g.user_id} attempting to remove student {student_id} (code: {student_code})."
+    )
     try:
         result = admin_service.remove_student_from_admin(g.db, g.user_id, student_id)
         return jsonify(result), 200
@@ -212,12 +231,14 @@ def find_user_by_code_route():
         return jsonify({"error": str(e)}), 500
 
 
-@admin_bp.route("/students/<student_id>/score", methods=["POST"])
+@admin_bp.route("/students/<student_code>/score", methods=["POST"])
 @admin_required
-def add_score_route(student_id: str):
+@resolve_user_by_code("student_code")
+def add_score_route(student_code: str):
     """Adds an assessment score to a student managed by the admin."""
+    student_id = g.target_user_id
     logger.info(
-        f"ROUTE: Admin {g.user_id} attempting to add score to student {student_id}."
+        f"ROUTE: Admin {g.user_id} attempting to add score to student {student_id} (code: {student_code})."
     )
     try:
         schema = ScoreUpdateSchema(**request.get_json())
