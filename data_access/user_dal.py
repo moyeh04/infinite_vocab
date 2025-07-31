@@ -5,6 +5,7 @@ from typing import Optional
 
 from firebase_admin import firestore
 
+from data_access import admin_dal as a_dal
 from models import User
 from utils import DatabaseError, timed_execution
 
@@ -147,13 +148,23 @@ def get_users_for_leaderboard(db, limit: int = 20) -> list[User]:
             .limit(limit)
         )
         docs = query.stream()
+
         for doc in docs:
             db_data = doc.to_dict()
             db_data["user_id"] = doc.id
             users.append(User.model_validate(db_data))
-        logger.info(f"DAL: Retrieved {len(users)} users for leaderboard.")
 
-        return users
+        # Get the set of all admin IDs
+        admin_ids = a_dal.get_all_admin_ids(db)
+
+        # Filter out any users who are admins
+        non_admin_users = [user for user in users if user.user_id not in admin_ids]
+
+        logger.info(
+            f"DAL: Retrieved {len(non_admin_users)} non-admin users for leaderboard."
+        )
+        return non_admin_users  # Return the filtered list
+
     except Exception as e:
         logger.error(f"DAL: Failed to list users for leaderboard: {e}", exc_info=True)
         raise DatabaseError(f"Failed to list users for leaderboard: {e}") from e
