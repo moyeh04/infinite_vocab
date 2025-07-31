@@ -3,6 +3,7 @@
 import logging
 from typing import List
 
+from data_access import admin_dal as a_dal
 from data_access import score_history_dal as sh_dal
 from data_access import user_dal as u_dal
 from factories import UserFactory
@@ -51,6 +52,9 @@ def get_user_profile(db, user_id: str) -> User:
     logger.info(f"SERVICE: get_user_profile invoked for user_id: {user_id}.")
     try:
         user = u_dal.get_user_by_id(db, user_id)
+        admin_ids = a_dal.get_all_admin_ids(db)
+        if user.user_id in admin_ids:
+            user.is_admin = True
         if not user:
             raise NotFoundError(f"User with ID '{user_id}' not found.")
 
